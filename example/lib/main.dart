@@ -9,8 +9,8 @@ const _style = TextStyle(
   fontSize: 40,
   fontWeight: FontWeight.bold,
 );
-const letterAnimationDuration = Duration(milliseconds: 500);
-const wordAnimationDuration = Duration(milliseconds: 10000);
+const letterAnimationDuration = Duration(milliseconds: 3000);
+const wordAnimationDuration = Duration(milliseconds: 1000);
 
 void main() {
   runApp(
@@ -467,6 +467,7 @@ class ScaleTextDemo extends StatelessWidget {
         text: _loremText,
         style: _style,
         config: AnimationConfig(
+          type: type,
           duration: duration,
           onPlay: (controller) {
             print('$runtimeType is played!');
