@@ -10,7 +10,7 @@ const _style = TextStyle(
   fontWeight: FontWeight.bold,
 );
 const letterAnimationDuration = Duration(milliseconds: 500);
-const wordAnimationDuration = Duration(milliseconds: 1000);
+const wordAnimationDuration = Duration(milliseconds: 10000);
 
 void main() {
   runApp(
@@ -29,7 +29,7 @@ class HomeWidget extends StatefulWidget {
 
 class _HomeWidgetState extends State<HomeWidget>
     with SingleTickerProviderStateMixin {
-  late final AnimationController controller;
+  AnimationController? controller;
 
   final PageController letterController = PageController();
   final PageController wordController = PageController();
@@ -37,13 +37,6 @@ class _HomeWidgetState extends State<HomeWidget>
   final curve = Curves.easeInOut;
   int selectedValue = 0;
   final int length = 12;
-
-  @override
-  void initState() {
-    super.initState();
-    controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 2000));
-  }
 
   @override
   void dispose() {
@@ -89,6 +82,10 @@ class _HomeWidgetState extends State<HomeWidget>
   int get currentLetterPage => letterController.page?.round() ?? 0;
   int get currentWordPage => wordController.page?.round() ?? 0;
 
+  void _setController(AnimationController c) {
+    controller = c;
+  }
+
   @override
   Widget build(BuildContext context) {
     return SelectionArea(
@@ -131,7 +128,7 @@ class _HomeWidgetState extends State<HomeWidget>
                   //   _ => _restartAnimation(currentWordPage),
                   // },
                   onPressed: () {
-                    controller.repeat();
+                    controller?.repeat();
                   },
                   child: const Icon(Icons.refresh),
                 ),
@@ -167,31 +164,31 @@ class _HomeWidgetState extends State<HomeWidget>
                   flex: 9,
                   child: PageView(
                     controller: letterController,
-                    children: const [
-                      SpringDemo(),
-                      ChimeBellDemo(),
+                    children: [
+                      // SpringDemo(builder: _setController),
+                      // ChimeBellDemo(),
                       ScaleTextDemo(),
-                      RotateTextDemo(),
-                      RotateTextDemo(
-                        direction: RotateAnimationType.anticlockwise,
-                      ),
-                      BlurTextDemo(),
-                      OffsetTextDemo(),
-                      OffsetTextDemo(
-                        slideType: SlideAnimationType.bottomTop,
-                      ),
-                      OffsetTextDemo(
-                        slideType: SlideAnimationType.alternateTB,
-                      ),
-                      OffsetTextDemo(
-                        slideType: SlideAnimationType.leftRight,
-                      ),
-                      OffsetTextDemo(
-                        slideType: SlideAnimationType.rightLeft,
-                      ),
-                      OffsetTextDemo(
-                        slideType: SlideAnimationType.alternateLR,
-                      ),
+                      // RotateTextDemo(),
+                      // RotateTextDemo(
+                      //   direction: RotateAnimationType.anticlockwise,
+                      // ),
+                      // BlurTextDemo(),
+                      // OffsetTextDemo(),
+                      // OffsetTextDemo(
+                      //   slideType: SlideAnimationType.bottomTop,
+                      // ),
+                      // OffsetTextDemo(
+                      //   slideType: SlideAnimationType.alternateTB,
+                      // ),
+                      // OffsetTextDemo(
+                      //   slideType: SlideAnimationType.leftRight,
+                      // ),
+                      // OffsetTextDemo(
+                      //   slideType: SlideAnimationType.rightLeft,
+                      // ),
+                      // OffsetTextDemo(
+                      //   slideType: SlideAnimationType.alternateLR,
+                      // ),
                     ],
                   ),
                 ),
@@ -202,60 +199,60 @@ class _HomeWidgetState extends State<HomeWidget>
                   child: PageView(
                     controller: wordController,
                     children: const [
-                      SpringDemo(
-                        type: AnimationType.word,
-                        duration: wordAnimationDuration,
-                      ),
-                      ChimeBellDemo(
-                        type: AnimationType.word,
-                        duration: wordAnimationDuration,
-                      ),
+                      // SpringDemo(
+                      //   type: AnimationType.word,
+                      //   duration: wordAnimationDuration,
+                      // ),
+                      // ChimeBellDemo(
+                      //   type: AnimationType.word,
+                      //   duration: wordAnimationDuration,
+                      // ),
                       ScaleTextDemo(
                         type: AnimationType.word,
                         duration: wordAnimationDuration,
                       ),
-                      RotateTextDemo(
-                        type: AnimationType.word,
-                        duration: wordAnimationDuration,
-                      ),
-                      RotateTextDemo(
-                        type: AnimationType.word,
-                        direction: RotateAnimationType.anticlockwise,
-                        duration: wordAnimationDuration,
-                      ),
-                      BlurTextDemo(
-                        type: AnimationType.word,
-                        duration: wordAnimationDuration,
-                      ),
-                      OffsetTextDemo(
-                        type: AnimationType.word,
-                        duration: wordAnimationDuration,
-                      ),
-                      OffsetTextDemo(
-                        type: AnimationType.word,
-                        slideType: SlideAnimationType.bottomTop,
-                        duration: wordAnimationDuration,
-                      ),
-                      OffsetTextDemo(
-                        type: AnimationType.word,
-                        slideType: SlideAnimationType.alternateTB,
-                        duration: wordAnimationDuration,
-                      ),
-                      OffsetTextDemo(
-                        type: AnimationType.word,
-                        slideType: SlideAnimationType.leftRight,
-                        duration: wordAnimationDuration,
-                      ),
-                      OffsetTextDemo(
-                        type: AnimationType.word,
-                        slideType: SlideAnimationType.rightLeft,
-                        duration: wordAnimationDuration,
-                      ),
-                      OffsetTextDemo(
-                        type: AnimationType.word,
-                        slideType: SlideAnimationType.alternateLR,
-                        duration: wordAnimationDuration,
-                      ),
+                      // RotateTextDemo(
+                      //   type: AnimationType.word,
+                      //   duration: wordAnimationDuration,
+                      // ),
+                      // RotateTextDemo(
+                      //   type: AnimationType.word,
+                      //   direction: RotateAnimationType.anticlockwise,
+                      //   duration: wordAnimationDuration,
+                      // ),
+                      // BlurTextDemo(
+                      //   type: AnimationType.word,
+                      //   duration: wordAnimationDuration,
+                      // ),
+                      // OffsetTextDemo(
+                      //   type: AnimationType.word,
+                      //   duration: wordAnimationDuration,
+                      // ),
+                      // OffsetTextDemo(
+                      //   type: AnimationType.word,
+                      //   slideType: SlideAnimationType.bottomTop,
+                      //   duration: wordAnimationDuration,
+                      // ),
+                      // OffsetTextDemo(
+                      //   type: AnimationType.word,
+                      //   slideType: SlideAnimationType.alternateTB,
+                      //   duration: wordAnimationDuration,
+                      // ),
+                      // OffsetTextDemo(
+                      //   type: AnimationType.word,
+                      //   slideType: SlideAnimationType.leftRight,
+                      //   duration: wordAnimationDuration,
+                      // ),
+                      // OffsetTextDemo(
+                      //   type: AnimationType.word,
+                      //   slideType: SlideAnimationType.rightLeft,
+                      //   duration: wordAnimationDuration,
+                      // ),
+                      // OffsetTextDemo(
+                      //   type: AnimationType.word,
+                      //   slideType: SlideAnimationType.alternateLR,
+                      //   duration: wordAnimationDuration,
+                      // ),
                     ],
                   ),
                 ),
@@ -420,8 +417,10 @@ class ChimeBellDemo extends StatelessWidget {
 class SpringDemo extends StatelessWidget {
   final AnimationType type;
   final Duration duration;
+  final void Function(AnimationController)? builder;
   const SpringDemo({
     super.key,
+    this.builder,
     this.type = AnimationType.letter,
     this.duration = letterAnimationDuration,
   });
@@ -443,6 +442,7 @@ class SpringDemo extends StatelessWidget {
         onPlay: (_) {
           print('$runtimeType is played!');
         },
+        builder: builder,
       ),
     );
   }
@@ -465,9 +465,25 @@ class ScaleTextDemo extends StatelessWidget {
       child: ScaleText(
         key: scaleTextKey,
         text: _loremText,
-        duration: duration,
-        type: type,
-        textStyle: _style,
+        config: AnimationConfig(
+          duration: duration,
+          onPlay: (controller) {
+            print('$runtimeType is played!');
+            controller.repeat();
+          },
+          onPause: (controller) {
+            print('$runtimeType is paused!');
+          },
+          onRepeat: (controller) {
+            print('$runtimeType is repeated!');
+          },
+          onComplete: (controller) {
+            print('$runtimeType is completed!');
+          },
+          onDismissed: (controller) {
+            print('$runtimeType is dismissed!');
+          },
+        ),
       ),
     );
   }
