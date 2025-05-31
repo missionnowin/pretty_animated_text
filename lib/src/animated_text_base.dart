@@ -123,6 +123,9 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
         widget.config.onDismissed?.call(_textController);
         if (widget.config.reverse) {
           _isReversing = false;
+          if (widget.config.repeat) {
+            _handleRepeat();
+          }
         }
         break;
       case AnimationStatus.reverse:

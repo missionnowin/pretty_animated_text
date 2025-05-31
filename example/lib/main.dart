@@ -472,7 +472,7 @@ class ScaleTextDemo extends StatelessWidget {
           repeat: true,
           repeatCount: 3,
           reverse: true,
-          // repeatDelay: const Duration(milliseconds: 1000),
+          repeatDelay: const Duration(milliseconds: 500),
           onPlay: (controller) {
             print('$runtimeType is played!');
             // controller.repeat();
