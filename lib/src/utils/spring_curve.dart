@@ -3,18 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 
 class SpringCurve extends Curve {
+  const SpringCurve({this.dampingRatio = 0.5});
+
+  final double dampingRatio;
   @override
   double transform(double t) {
     // A SpringSimulation that will simulate spring physics.
     final simulation = SpringSimulation(
       SpringDescription.withDampingRatio(
-        ratio: 0.5,
-        stiffness: 400,
+        ratio: dampingRatio,
+        stiffness: 30,
         mass: 1,
       ),
       0,
       1,
-      5,
+      0,
       snapToEnd: true,
     );
 

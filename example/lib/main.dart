@@ -35,7 +35,7 @@ class _HomeWidgetState extends State<HomeWidget>
   final PageController wordController = PageController();
   final pageTransitionDuration = const Duration(milliseconds: 200);
   final curve = Curves.easeInOut;
-  int selectedValue = 0;
+  int selectedValue = 1;
   final int length = 12;
 
   @override
@@ -465,6 +465,7 @@ class ScaleTextDemo extends StatelessWidget {
       child: ScaleText(
         key: scaleTextKey,
         text: _loremText,
+        style: _style,
         config: AnimationConfig(
           duration: duration,
           onPlay: (controller) {

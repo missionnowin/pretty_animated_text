@@ -3,6 +3,8 @@ import 'package:pretty_animated_text/src/animation_config.dart';
 import 'package:pretty_animated_text/src/utils/text_transformation.dart';
 import 'package:pretty_animated_text/src/enums/animation_type.dart';
 import 'package:pretty_animated_text/src/animated_text_controller.dart';
+import 'package:pretty_animated_text/src/utils/interval_step_by_overlap_factor.dart';
+import 'package:pretty_animated_text/src/utils/custom_curved_animation.dart';
 
 /// Base widget for text animations that provides efficient animation handling
 class AnimatedTextBase extends StatefulWidget {
@@ -72,21 +74,18 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
     // Add status listener for callbacks
     _controller.addStatusListener(_handleAnimationStatus);
 
-    // Create staggered animations for each segment
+    // Create overlapped animations for each segment
     final segmentCount = _segments.length;
-    final staggerDuration =
-        widget.config.duration.inMilliseconds ~/ segmentCount;
+    final intervalStep = intervalStepByOverlapFactor(segmentCount, widget.config.overlapFactor);
 
     _animations = List.generate(segmentCount, (index) {
-      final start =
-          index * staggerDuration / widget.config.duration.inMilliseconds;
-      final end =
-          (index + 1) * staggerDuration / widget.config.duration.inMilliseconds;
-
       return Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-          parent: _controller,
-          curve: Interval(start, end, curve: widget.config.curve),
+        curvedAnimation(
+          _controller,
+          index,
+          intervalStep,
+          widget.config.overlapFactor,
+          curve: widget.config.curve,
         ),
       );
     });
@@ -191,20 +190,16 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
 
       // Recreate animations with new configuration
       final segmentCount = _segments.length;
-      final staggerDuration =
-          widget.config.duration.inMilliseconds ~/ segmentCount;
+      final intervalStep = intervalStepByOverlapFactor(segmentCount, widget.config.overlapFactor);
 
       _animations = List.generate(segmentCount, (index) {
-        final start =
-            index * staggerDuration / widget.config.duration.inMilliseconds;
-        final end = (index + 1) *
-            staggerDuration /
-            widget.config.duration.inMilliseconds;
-
         return Tween<double>(begin: 0.0, end: 1.0).animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: Interval(start, end, curve: widget.config.curve),
+          curvedAnimation(
+            _controller,
+            index,
+            intervalStep,
+            widget.config.overlapFactor,
+            curve: widget.config.curve,
           ),
         );
       });

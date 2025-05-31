@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pretty_animated_text/pretty_animated_text.dart';
 import 'package:pretty_animated_text/src/animated_text_controller.dart';
+import 'package:pretty_animated_text/src/utils/spring_curve.dart';
 
 /// Configuration for text animations
 class AnimationConfig {
@@ -43,12 +44,17 @@ class AnimationConfig {
   /// The callback when the animation repeats
   final void Function(AnimatedTextController)? onRepeat;
 
+  /// The type of animation (letter or word)
   final AnimationType type;
+
+  /// The overlap factor for letter/word animations (0.0 to 1.0)
+  /// 0.0 means no overlap, 1.0 means maximum overlap
+  double get overlapFactor => 0.5;
 
   const AnimationConfig({
     this.duration = const Duration(milliseconds: 500),
     this.delay = Duration.zero,
-    this.curve = Curves.easeInOut,
+    this.curve = const SpringCurve(),
     this.reverse = false,
     this.repeat = false,
     this.repeatCount,
