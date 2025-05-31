@@ -48,6 +48,7 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
   late List<String> _segments;
   late AnimatedTextController _textController;
   int _repeatCount = 0;
+  bool _isReversing = false;
 
   @override
   void initState() {
@@ -111,12 +112,18 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
         break;
       case AnimationStatus.completed:
         widget.config.onComplete?.call(_textController);
-        if (widget.config.repeat) {
+        if (widget.config.reverse && !_isReversing) {
+          _isReversing = true;
+          _controller.reverse();
+        } else if (widget.config.repeat) {
           _handleRepeat();
         }
         break;
       case AnimationStatus.dismissed:
         widget.config.onDismissed?.call(_textController);
+        if (widget.config.reverse) {
+          _isReversing = false;
+        }
         break;
       case AnimationStatus.reverse:
         widget.config.onRepeat?.call(_textController);
@@ -136,20 +143,12 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
       Future.delayed(widget.config.repeatDelay, () {
         if (mounted) {
           _controller.reset();
-          if (widget.config.reverse) {
-            _controller.reverse();
-          } else {
-            _controller.forward();
-          }
+          _controller.forward();
         }
       });
     } else {
       _controller.reset();
-      if (widget.config.reverse) {
-        _controller.reverse();
-      } else {
-        _controller.forward();
-      }
+      _controller.forward();
     }
   }
 
@@ -167,16 +166,14 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
 
   void _startAnimation() {
     _repeatCount = 0;
-    if (widget.config.reverse) {
-      _controller.reverse();
-    } else {
-      _controller.forward();
-    }
+    _isReversing = false;
+    _controller.forward();
   }
 
   // Public methods to control animation
   void play() {
     _repeatCount = 0;
+    _isReversing = false;
     _controller.forward();
     widget.config.onPlay?.call(_textController);
   }
@@ -187,31 +184,43 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
   }
 
   void resume() {
-    _controller.forward();
+    if (_isReversing) {
+      _controller.reverse();
+    } else {
+      _controller.forward();
+    }
     widget.config.onResume?.call(_textController);
   }
 
   void reverse() {
-    _controller.reverse();
+    if (_controller.value == 0.0) {
+      _controller.forward();
+    } else {
+      _isReversing = true;
+      _controller.reverse();
+    }
+    widget.config.onPlay?.call(_textController);
   }
 
   void restart() {
     _repeatCount = 0;
+    _isReversing = false;
     _controller.reset();
     Future.delayed(const Duration(milliseconds: 10), () {
-      if (widget.config.reverse) {
-        _controller.reverse();
-      } else {
-        _controller.forward();
-      }
+      _controller.forward();
       widget.config.onPlay?.call(_textController);
     });
   }
 
   void repeat({bool reverse = false}) {
     _repeatCount = 0;
-    _controller.repeat(reverse: reverse);
-    widget.config.onRepeat?.call(_textController);
+    _isReversing = false;
+    if (reverse) {
+      _controller.repeat(reverse: true);
+    } else {
+      _controller.repeat(reverse: false);
+    }
+    widget.config.onPlay?.call(_textController);
   }
 
   @override
@@ -220,6 +229,7 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
     if (oldWidget.config != widget.config || oldWidget.text != widget.text) {
       _controller.duration = widget.config.duration;
       _repeatCount = 0;
+      _isReversing = false;
 
       // Recreate animations with new configuration
       final segmentCount = _segments.length;
