@@ -9,15 +9,16 @@ class SpringCurve extends Curve {
   @override
   double transform(double t) {
     // A SpringSimulation that will simulate spring physics.
-   final simulation = SpringSimulation(
-      const SpringDescription(
+    final simulation = SpringSimulation(
+      SpringDescription.withDampingRatio(
+        ratio: dampingRatio,
+        stiffness: 60,
         mass: 1,
-        stiffness: 60, // Stiffness of the spring
-        damping: 10, // Damping to control oscillation
       ),
-      0, // Initial position
-      1, // Target position
-      0, // Initial velocity
+      0,
+      1,
+      0,
+      snapToEnd: true,
     );
 
     return simulation.x(t); // The position of the spring at time t

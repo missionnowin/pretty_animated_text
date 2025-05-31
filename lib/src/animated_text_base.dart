@@ -27,6 +27,9 @@ class AnimatedTextBase extends StatefulWidget {
   /// Optional controller to control the animation
   final AnimatedTextController? controller;
 
+  /// Callback when the controller is created
+  final void Function(AnimatedTextController)? onControllerCreated;
+
   const AnimatedTextBase({
     super.key,
     required this.text,
@@ -35,6 +38,7 @@ class AnimatedTextBase extends StatefulWidget {
     required this.config,
     required this.builder,
     this.controller,
+    this.onControllerCreated,
   });
 
   @override
@@ -65,7 +69,8 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
     );
 
     // Create text controller
-    _textController = AnimatedTextController();
+    _textController = widget.controller ?? AnimatedTextController();
+    _textController.animationController = _controller;
     _textController.onPlay = play;
     _textController.onPause = pause;
     _textController.onResume = resume;
@@ -73,12 +78,16 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
     _textController.onRestart = restart;
     _textController.onRepeat = repeat;
 
+    // Notify parent about controller creation
+    widget.onControllerCreated?.call(_textController);
+
     // Add status listener for callbacks
     _controller.addStatusListener(_handleAnimationStatus);
 
     // Create overlapped animations for each segment
     final segmentCount = _segments.length;
-    final intervalStep = intervalStepByOverlapFactor(segmentCount, widget.config.overlapFactor);
+    final intervalStep =
+        intervalStepByOverlapFactor(segmentCount, widget.config.overlapFactor);
 
     _animations = List.generate(segmentCount, (index) {
       return Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -94,6 +103,7 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
 
     // Initialize external controller if provided
     if (widget.controller != null) {
+      widget.controller!.animationController = _controller;
       widget.controller!.onPlay = play;
       widget.controller!.onPause = pause;
       widget.controller!.onResume = resume;
@@ -141,7 +151,7 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
         return;
       }
     }
-    
+
     if (widget.config.repeatDelay > Duration.zero) {
       Future.delayed(widget.config.repeatDelay, () {
         if (mounted) {
@@ -236,7 +246,8 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
 
       // Recreate animations with new configuration
       final segmentCount = _segments.length;
-      final intervalStep = intervalStepByOverlapFactor(segmentCount, widget.config.overlapFactor);
+      final intervalStep = intervalStepByOverlapFactor(
+          segmentCount, widget.config.overlapFactor);
 
       _animations = List.generate(segmentCount, (index) {
         return Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -258,6 +269,7 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
   void dispose() {
     _controller.removeStatusListener(_handleAnimationStatus);
     _controller.dispose();
+    _textController.dispose();
     super.dispose();
   }
 

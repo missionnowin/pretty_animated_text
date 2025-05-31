@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:pretty_animated_text/pretty_animated_text.dart';
+import 'package:pretty_animated_text/src/animated_text_controller.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -10,7 +11,7 @@ const _style = TextStyle(
   fontWeight: FontWeight.bold,
 );
 const letterAnimationDuration = Duration(milliseconds: 3000);
-const wordAnimationDuration = Duration(milliseconds: 1000);
+const wordAnimationDuration = Duration(milliseconds: 3000);
 
 void main() {
   runApp(
@@ -29,19 +30,20 @@ class HomeWidget extends StatefulWidget {
 
 class _HomeWidgetState extends State<HomeWidget>
     with SingleTickerProviderStateMixin {
-  AnimationController? controller;
+  AnimatedTextController? letterController;
+  AnimatedTextController? wordController;
 
-  final PageController letterController = PageController();
-  final PageController wordController = PageController();
+  final PageController letterPageController = PageController();
+  final PageController wordPageController = PageController();
   final pageTransitionDuration = const Duration(milliseconds: 200);
   final curve = Curves.easeInOut;
-  int selectedValue = 1;
+  int selectedValue = 0;
   final int length = 12;
 
   @override
   void dispose() {
-    letterController.dispose();
-    wordController.dispose();
+    letterPageController.dispose();
+    wordPageController.dispose();
     super.dispose();
   }
 
@@ -53,12 +55,12 @@ class _HomeWidgetState extends State<HomeWidget>
 
   void _previousPage() {
     if (selectedValue == 0) {
-      letterController.previousPage(
+      letterPageController.previousPage(
         duration: pageTransitionDuration,
         curve: curve,
       );
     } else {
-      wordController.previousPage(
+      wordPageController.previousPage(
         duration: pageTransitionDuration,
         curve: curve,
       );
@@ -67,23 +69,27 @@ class _HomeWidgetState extends State<HomeWidget>
 
   void _nextPage() {
     if (selectedValue == 0) {
-      letterController.nextPage(
+      letterPageController.nextPage(
         duration: pageTransitionDuration,
         curve: curve,
       );
     } else {
-      wordController.nextPage(
+      wordPageController.nextPage(
         duration: pageTransitionDuration,
         curve: curve,
       );
     }
   }
 
-  int get currentLetterPage => letterController.page?.round() ?? 0;
-  int get currentWordPage => wordController.page?.round() ?? 0;
+  int get currentLetterPage => letterPageController.page?.round() ?? 0;
+  int get currentWordPage => wordPageController.page?.round() ?? 0;
 
-  void _setController(AnimationController c) {
-    controller = c;
+  void _setLetterController(AnimatedTextController controller) {
+    letterController = controller;
+  }
+
+  void _setWordController(AnimatedTextController controller) {
+    wordController = controller;
   }
 
   @override
@@ -123,32 +129,32 @@ class _HomeWidgetState extends State<HomeWidget>
               children: [
                 FloatingActionButton(
                   key: const ValueKey('repeat'),
-                  // onPressed: () => switch (selectedValue) {
-                  //   0 => _restartAnimation(currentLetterPage),
-                  //   _ => _restartAnimation(currentWordPage),
-                  // },
                   onPressed: () {
-                    controller?.repeat();
+                    letterController?.repeat();
+                    wordController?.repeat();
                   },
                   child: const Icon(Icons.refresh),
                 ),
                 const SizedBox(height: 4),
                 FloatingActionButton(
                   key: const ValueKey('pause'),
-                  onPressed: () => switch (selectedValue) {
-                    0 => _pauseAnimation(currentLetterPage),
-                    _ => _pauseAnimation(currentWordPage),
+                  onPressed: () {
+                    if (letterController?.isPlaying ?? false) {
+                      letterController?.pause();
+                    } else {
+                      letterController?.play();
+                    }
+                    if (wordController?.isPlaying ?? false) {
+                      wordController?.pause();
+                    } else {
+                      wordController?.play();
+                    }
                   },
-                  child: const Icon(Icons.pause),
-                ),
-                const SizedBox(height: 4),
-                FloatingActionButton(
-                  key: const ValueKey('play'),
-                  onPressed: () => switch (selectedValue) {
-                    0 => _playAnimation(currentLetterPage),
-                    _ => _playAnimation(currentWordPage),
-                  },
-                  child: const Icon(Icons.play_arrow),
+                  child: Icon(
+                    (letterController?.isPlaying ?? false)
+                        ? Icons.pause
+                        : Icons.play_arrow,
+                  ),
                 ),
               ],
             ),
@@ -163,100 +169,40 @@ class _HomeWidgetState extends State<HomeWidget>
                 Expanded(
                   flex: 9,
                   child: PageView(
-                    controller: letterController,
+                    controller: letterPageController,
                     children: [
-                      // SpringDemo(builder: _setController),
-                      // ChimeBellDemo(),
-                      ScaleTextDemo(),
-                      // RotateTextDemo(),
-                      // RotateTextDemo(
-                      //   direction: RotateAnimationType.anticlockwise,
-                      // ),
-                      // BlurTextDemo(),
-                      // OffsetTextDemo(),
-                      // OffsetTextDemo(
-                      //   slideType: SlideAnimationType.bottomTop,
-                      // ),
-                      // OffsetTextDemo(
-                      //   slideType: SlideAnimationType.alternateTB,
-                      // ),
-                      // OffsetTextDemo(
-                      //   slideType: SlideAnimationType.leftRight,
-                      // ),
-                      // OffsetTextDemo(
-                      //   slideType: SlideAnimationType.rightLeft,
-                      // ),
-                      // OffsetTextDemo(
-                      //   slideType: SlideAnimationType.alternateLR,
-                      // ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: 12,
+                        children: [
+                          ScaleTextDemo(
+                            onControllerCreated: _setLetterController,
+                          ),
+                          ScaleTextDemo(
+                            onControllerCreated: _setWordController,
+                            type: AnimationType.word,
+                            duration: wordAnimationDuration,
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
-                _pageIndicator(letterController),
+                _pageIndicator(letterPageController),
               ] else ...[
                 Expanded(
                   flex: 9,
                   child: PageView(
-                    controller: wordController,
+                    controller: wordPageController,
                     children: const [
-                      // SpringDemo(
-                      //   type: AnimationType.word,
-                      //   duration: wordAnimationDuration,
-                      // ),
-                      // ChimeBellDemo(
-                      //   type: AnimationType.word,
-                      //   duration: wordAnimationDuration,
-                      // ),
                       ScaleTextDemo(
                         type: AnimationType.word,
                         duration: wordAnimationDuration,
                       ),
-                      // RotateTextDemo(
-                      //   type: AnimationType.word,
-                      //   duration: wordAnimationDuration,
-                      // ),
-                      // RotateTextDemo(
-                      //   type: AnimationType.word,
-                      //   direction: RotateAnimationType.anticlockwise,
-                      //   duration: wordAnimationDuration,
-                      // ),
-                      // BlurTextDemo(
-                      //   type: AnimationType.word,
-                      //   duration: wordAnimationDuration,
-                      // ),
-                      // OffsetTextDemo(
-                      //   type: AnimationType.word,
-                      //   duration: wordAnimationDuration,
-                      // ),
-                      // OffsetTextDemo(
-                      //   type: AnimationType.word,
-                      //   slideType: SlideAnimationType.bottomTop,
-                      //   duration: wordAnimationDuration,
-                      // ),
-                      // OffsetTextDemo(
-                      //   type: AnimationType.word,
-                      //   slideType: SlideAnimationType.alternateTB,
-                      //   duration: wordAnimationDuration,
-                      // ),
-                      // OffsetTextDemo(
-                      //   type: AnimationType.word,
-                      //   slideType: SlideAnimationType.leftRight,
-                      //   duration: wordAnimationDuration,
-                      // ),
-                      // OffsetTextDemo(
-                      //   type: AnimationType.word,
-                      //   slideType: SlideAnimationType.rightLeft,
-                      //   duration: wordAnimationDuration,
-                      // ),
-                      // OffsetTextDemo(
-                      //   type: AnimationType.word,
-                      //   slideType: SlideAnimationType.alternateLR,
-                      //   duration: wordAnimationDuration,
-                      // ),
                     ],
                   ),
                 ),
-                _pageIndicator(wordController),
+                _pageIndicator(wordPageController),
               ],
             ],
           ),
@@ -264,53 +210,6 @@ class _HomeWidgetState extends State<HomeWidget>
       ),
     );
   }
-
-  void _playAnimation(int page) => switch (page) {
-        // 0 => springTextKey.currentState?.playAnimation(),
-        // 1 => chimbellTextKey.currentState?.playAnimation(),
-        // 2 => scaleTextKey.currentState?.playAnimation(),
-        // 3 => rotateTextKey.currentState?.playAnimation(),
-        // 4 => rotateTextAntiKey.currentState?.playAnimation(),
-        // 5 => blurTextKey.currentState?.playAnimation(),
-        // 6 => offsetTextTBKey.currentState?.playAnimation(),
-        // 7 => offsetTextBTKey.currentState?.playAnimation(),
-        // 8 => offsetTextAlternateTBKey.currentState?.playAnimation(),
-        // 9 => offsetTextLRKey.currentState?.playAnimation(),
-        // 10 => offsetTextRLKey.currentState?.playAnimation(),
-        // 11 => offsetTextAlternateLRKey.currentState?.playAnimation(),
-        _ => () {},
-      };
-
-  void _pauseAnimation(int page) => switch (page) {
-        // 0 => springTextKey.currentState?.pauseAnimation(),
-        // 1 => chimbellTextKey.currentState?.pauseAnimation(),
-        // 2 => scaleTextKey.currentState?.pauseAnimation(),
-        // 3 => rotateTextKey.currentState?.pauseAnimation(),
-        // 4 => rotateTextAntiKey.currentState?.pauseAnimation(),
-        // 5 => blurTextKey.currentState?.pauseAnimation(),
-        // 6 => offsetTextTBKey.currentState?.pauseAnimation(),
-        // 7 => offsetTextBTKey.currentState?.pauseAnimation(),
-        // 8 => offsetTextAlternateTBKey.currentState?.pauseAnimation(),
-        // 9 => offsetTextLRKey.currentState?.pauseAnimation(),
-        // 10 => offsetTextRLKey.currentState?.pauseAnimation(),
-        // 11 => offsetTextAlternateLRKey.currentState?.pauseAnimation(),
-        _ => () {},
-      };
-  void _restartAnimation(int page) => switch (page) {
-        // 0 => springTextKey.currentState?.restartAnimation(),
-        // 1 => chimbellTextKey.currentState?.restartAnimation(),
-        // 2 => scaleTextKey.currentState?.restartAnimation(),
-        // 3 => rotateTextKey.currentState?.restartAnimation(),
-        // 4 => rotateTextAntiKey.currentState?.restartAnimation(),
-        // 5 => blurTextKey.currentState?.restartAnimation(),
-        // 6 => offsetTextTBKey.currentState?.restartAnimation(),
-        // 7 => offsetTextBTKey.currentState?.restartAnimation(),
-        // 8 => offsetTextAlternateTBKey.currentState?.restartAnimation(),
-        // 9 => offsetTextLRKey.currentState?.restartAnimation(),
-        // 10 => offsetTextRLKey.currentState?.restartAnimation(),
-        // 11 => offsetTextAlternateLRKey.currentState?.restartAnimation(),
-        _ => () {},
-      };
 
   Widget _pageIndicator(PageController controller) {
     return Expanded(
@@ -378,9 +277,11 @@ class _HomeWidgetState extends State<HomeWidget>
           });
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (selectedValue == 0) {
-              letterController.jumpToPage(0);
+              letterPageController.jumpToPage(0);
+              letterController?.restart();
             } else {
-              wordController.jumpToPage(0);
+              wordPageController.jumpToPage(0);
+              wordController?.restart();
             }
           });
         },
@@ -452,20 +353,23 @@ class ScaleTextDemo extends StatelessWidget {
   final AnimationType type;
   final Duration duration;
   final GlobalKey? scaleTextKey;
+  final void Function(AnimatedTextController)? onControllerCreated;
   const ScaleTextDemo({
     super.key,
     this.scaleTextKey,
     this.type = AnimationType.letter,
     this.duration = letterAnimationDuration,
+    this.onControllerCreated,
   });
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: ScaleText(
+      child: AnimatedTextBase(
         key: scaleTextKey,
         text: _loremText,
         style: _style,
+        textAlign: TextAlign.start,
         config: AnimationConfig(
           type: type,
           duration: duration,
@@ -475,7 +379,6 @@ class ScaleTextDemo extends StatelessWidget {
           repeatDelay: const Duration(milliseconds: 500),
           onPlay: (controller) {
             print('$runtimeType is played!');
-            // controller.repeat();
           },
           onPause: (controller) {
             print('$runtimeType is paused!');
@@ -490,6 +393,22 @@ class ScaleTextDemo extends StatelessWidget {
             print('$runtimeType is dismissed!');
           },
         ),
+        builder: (context, animations, segments) {
+          return Wrap(
+            alignment: WrapAlignment.start,
+            children: List.generate(segments.length, (index) {
+              return Transform.scale(
+                scale: animations[index].value,
+                alignment: Alignment.center,
+                child: Text(
+                  segments[index],
+                  style: _style,
+                ),
+              );
+            }),
+          );
+        },
+        onControllerCreated: onControllerCreated,
       ),
     );
   }
