@@ -139,22 +139,19 @@ class _HomeWidgetState extends State<HomeWidget>
                 FloatingActionButton(
                   key: const ValueKey('pause'),
                   onPressed: () {
-                    if (letterController?.isPlaying ?? false) {
-                      letterController?.pause();
-                    } else {
-                      letterController?.play();
-                    }
-                    if (wordController?.isPlaying ?? false) {
-                      wordController?.pause();
-                    } else {
-                      wordController?.play();
-                    }
+                    letterController?.pause();
+                    wordController?.pause();
                   },
-                  child: Icon(
-                    (letterController?.isPlaying ?? false)
-                        ? Icons.pause
-                        : Icons.play_arrow,
-                  ),
+                  child: const Icon(Icons.pause),
+                ),
+                const SizedBox(height: 4),
+                FloatingActionButton(
+                  key: const ValueKey('play'),
+                  onPressed: () {
+                    letterController?.play();
+                    wordController?.play();
+                  },
+                  child: const Icon(Icons.play_arrow),
                 ),
               ],
             ),
