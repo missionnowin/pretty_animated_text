@@ -47,6 +47,7 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
   late List<Animation<double>> _animations;
   late List<String> _segments;
   late AnimatedTextController _textController;
+  int _repeatCount = 0;
 
   @override
   void initState() {
@@ -110,6 +111,9 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
         break;
       case AnimationStatus.completed:
         widget.config.onComplete?.call(_textController);
+        if (widget.config.repeat) {
+          _handleRepeat();
+        }
         break;
       case AnimationStatus.dismissed:
         widget.config.onDismissed?.call(_textController);
@@ -117,6 +121,35 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
       case AnimationStatus.reverse:
         widget.config.onRepeat?.call(_textController);
         break;
+    }
+  }
+
+  void _handleRepeat() {
+    if (widget.config.repeatCount != null) {
+      _repeatCount++;
+      if (_repeatCount >= widget.config.repeatCount!) {
+        return;
+      }
+    }
+    
+    if (widget.config.repeatDelay > Duration.zero) {
+      Future.delayed(widget.config.repeatDelay, () {
+        if (mounted) {
+          _controller.reset();
+          if (widget.config.reverse) {
+            _controller.reverse();
+          } else {
+            _controller.forward();
+          }
+        }
+      });
+    } else {
+      _controller.reset();
+      if (widget.config.reverse) {
+        _controller.reverse();
+      } else {
+        _controller.forward();
+      }
     }
   }
 
@@ -133,12 +166,8 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
   }
 
   void _startAnimation() {
-    if (widget.config.repeat) {
-      _controller.repeat(
-        period: widget.config.duration + widget.config.repeatDelay,
-        reverse: widget.config.reverse,
-      );
-    } else if (widget.config.reverse) {
+    _repeatCount = 0;
+    if (widget.config.reverse) {
       _controller.reverse();
     } else {
       _controller.forward();
@@ -147,6 +176,7 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
 
   // Public methods to control animation
   void play() {
+    _repeatCount = 0;
     _controller.forward();
     widget.config.onPlay?.call(_textController);
   }
@@ -166,6 +196,7 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
   }
 
   void restart() {
+    _repeatCount = 0;
     _controller.reset();
     Future.delayed(const Duration(milliseconds: 10), () {
       if (widget.config.reverse) {
@@ -178,6 +209,7 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
   }
 
   void repeat({bool reverse = false}) {
+    _repeatCount = 0;
     _controller.repeat(reverse: reverse);
     widget.config.onRepeat?.call(_textController);
   }
@@ -187,6 +219,7 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.config != widget.config || oldWidget.text != widget.text) {
       _controller.duration = widget.config.duration;
+      _repeatCount = 0;
 
       // Recreate animations with new configuration
       final segmentCount = _segments.length;

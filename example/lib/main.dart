@@ -469,9 +469,11 @@ class ScaleTextDemo extends StatelessWidget {
         config: AnimationConfig(
           type: type,
           duration: duration,
+          repeat: true,
+          repeatCount: 3,
           onPlay: (controller) {
             print('$runtimeType is played!');
-            controller.repeat();
+            // controller.repeat();
           },
           onPause: (controller) {
             print('$runtimeType is paused!');
