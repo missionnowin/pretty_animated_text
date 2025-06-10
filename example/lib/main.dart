@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:pretty_animated_text/pretty_animated_text.dart';
-import 'package:pretty_animated_text/src/animated_text_controller.dart';
+import 'package:pretty_animated_text/pretty_animated_text.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -10,13 +10,20 @@ const _style = TextStyle(
   fontSize: 40,
   fontWeight: FontWeight.bold,
 );
-const letterAnimationDuration = Duration(milliseconds: 3000);
-const wordAnimationDuration = Duration(milliseconds: 3000);
+const letterAnimationDuration = Duration(milliseconds: 200);
+const wordAnimationDuration = Duration(milliseconds: 1000);
 
 void main() {
   runApp(
-    const MaterialApp(
-      home: HomeWidget(),
+    MaterialApp(
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.indigo,
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
+      ),
+      home: const HomeWidget(),
     ),
   );
 }
@@ -30,20 +37,21 @@ class HomeWidget extends StatefulWidget {
 
 class _HomeWidgetState extends State<HomeWidget>
     with SingleTickerProviderStateMixin {
-  AnimatedTextController? letterController;
-  AnimatedTextController? wordController;
-
+  final Map<String, AnimatedTextController> _controllers = {};
   final PageController letterPageController = PageController();
   final PageController wordPageController = PageController();
   final pageTransitionDuration = const Duration(milliseconds: 200);
   final curve = Curves.easeInOut;
   int selectedValue = 0;
-  final int length = 12;
+  final int length = 6;
 
   @override
   void dispose() {
     letterPageController.dispose();
     wordPageController.dispose();
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -84,20 +92,40 @@ class _HomeWidgetState extends State<HomeWidget>
   int get currentLetterPage => letterPageController.page?.round() ?? 0;
   int get currentWordPage => wordPageController.page?.round() ?? 0;
 
-  void _setLetterController(AnimatedTextController controller) {
-    letterController = controller;
+  void _setController(String key, AnimatedTextController controller) {
+    _controllers[key] = controller;
   }
 
-  void _setWordController(AnimatedTextController controller) {
-    wordController = controller;
+  void _handlePlay() {
+    for (final controller in _controllers.values) {
+      controller.play();
+    }
+  }
+
+  void _handlePause() {
+    for (final controller in _controllers.values) {
+      controller.pause();
+    }
+  }
+
+  void _handleRepeat() {
+    for (final controller in _controllers.values) {
+      controller.repeat();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return SelectionArea(
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Pretty Animated Text'),
+          title: const Text(
+            'Pretty Animated Text',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          centerTitle: true,
           actions: [
             IconButton(
               key: const ValueKey('pub.dev'),
@@ -105,146 +133,354 @@ class _HomeWidgetState extends State<HomeWidget>
                 'https://pub.dev/packages/pretty_animated_text',
               ),
               icon: ClipRRect(
-                  borderRadius: BorderRadius.circular(50),
-                  child: Image.asset('assets/pub.png')),
+                borderRadius: BorderRadius.circular(50),
+                child: Image.asset('assets/pub.png'),
+              ),
             ),
-            const SizedBox(height: 8),
             IconButton(
               key: const ValueKey('github'),
               onPressed: () => _launchUrl(
                 'https://github.com/YeLwinOo-Steve/pretty_animated_text',
               ),
               icon: ClipRRect(
-                  borderRadius: BorderRadius.circular(50),
-                  child: Image.asset('assets/github.png')),
+                borderRadius: BorderRadius.circular(50),
+                child: Image.asset('assets/github.png'),
+              ),
             ),
+            const SizedBox(width: 8),
           ],
         ),
-        floatingActionButton: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                FloatingActionButton(
-                  key: const ValueKey('repeat'),
-                  onPressed: () {
-                    letterController?.repeat();
-                    wordController?.repeat();
-                  },
-                  child: const Icon(Icons.refresh),
-                ),
-                const SizedBox(height: 4),
-                FloatingActionButton(
-                  key: const ValueKey('pause'),
-                  onPressed: () {
-                    letterController?.pause();
-                    wordController?.pause();
-                  },
-                  child: const Icon(Icons.pause),
-                ),
-                const SizedBox(height: 4),
-                FloatingActionButton(
-                  key: const ValueKey('play'),
-                  onPressed: () {
-                    letterController?.play();
-                    wordController?.play();
-                  },
-                  child: const Icon(Icons.play_arrow),
-                ),
+        floatingActionButton: Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              _buildControlButton(
+                icon: Icons.refresh,
+                label: 'Repeat',
+                onPressed: _handleRepeat,
+                colorScheme: colorScheme,
+              ),
+              const SizedBox(width: 8),
+              _buildControlButton(
+                icon: Icons.pause,
+                label: 'Pause',
+                onPressed: _handlePause,
+                colorScheme: colorScheme,
+              ),
+              const SizedBox(width: 8),
+              _buildControlButton(
+                icon: Icons.play_arrow,
+                label: 'Play',
+                onPressed: _handlePlay,
+                colorScheme: colorScheme,
+              ),
+            ],
+          ),
+        ),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                colorScheme.surface,
+                colorScheme.surface.withValues(alpha: 0.8),
               ],
             ),
-          ],
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              _tabs(),
-              if (selectedValue == 0) ...[
-                Expanded(
-                  flex: 9,
-                  child: PageView(
-                    controller: letterPageController,
-                    children: [
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        spacing: 12,
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  _buildSegmentedControl(colorScheme),
+                  const SizedBox(height: 24),
+                  if (selectedValue == 0) ...[
+                    Expanded(
+                      flex: 9,
+                      child: PageView(
+                        controller: letterPageController,
                         children: [
-                          ScaleTextDemo(
-                            onControllerCreated: _setLetterController,
+                          _buildAnimationShowcase(
+                            title: 'Scale Animation',
+                            child: ScaleTextDemo(
+                              onControllerCreated: (controller) =>
+                                  _setController('scale_letter', controller),
+                            ),
                           ),
-                          ScaleTextDemo(
-                            onControllerCreated: _setWordController,
-                            type: AnimationType.word,
-                            duration: wordAnimationDuration,
+                          _buildAnimationShowcase(
+                            title: 'Slide Animation',
+                            child: SlideTextDemo(
+                              onControllerCreated: (controller) =>
+                                  _setController('slide_letter', controller),
+                              slideType: SlideAnimationType.leftRight,
+                            ),
+                          ),
+                          _buildAnimationShowcase(
+                            title: 'Rotate Animation',
+                            child: RotateTextDemo(
+                              onControllerCreated: (controller) =>
+                                  _setController('rotate_letter', controller),
+                              direction: RotateAnimationType.clockwise,
+                            ),
+                          ),
+                          _buildAnimationShowcase(
+                            title: 'Chime Bell Animation',
+                            child: ChimeBellDemo(
+                              onControllerCreated: (controller) =>
+                                  _setController('chime_letter', controller),
+                            ),
+                          ),
+                          _buildAnimationShowcase(
+                            title: 'Spring Animation',
+                            child: SpringDemo(
+                              onControllerCreated: (controller) =>
+                                  _setController('spring_letter', controller),
+                            ),
+                          ),
+                          _buildAnimationShowcase(
+                            title: 'Blur Animation',
+                            child: BlurTextDemo(
+                              onControllerCreated: (controller) =>
+                                  _setController('blur_letter', controller),
+                            ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                _pageIndicator(letterPageController),
-              ] else ...[
-                Expanded(
-                  flex: 9,
-                  child: PageView(
-                    controller: wordPageController,
-                    children: const [
-                      ScaleTextDemo(
-                        type: AnimationType.word,
-                        duration: wordAnimationDuration,
+                    ),
+                    _buildPageControls(letterPageController, colorScheme),
+                  ] else ...[
+                    Expanded(
+                      flex: 9,
+                      child: PageView(
+                        controller: wordPageController,
+                        children: [
+                          _buildAnimationShowcase(
+                            title: 'Scale Animation',
+                            child: ScaleTextDemo(
+                              type: AnimationType.word,
+                              duration: wordAnimationDuration,
+                              onControllerCreated: (controller) =>
+                                  _setController('scale_word', controller),
+                            ),
+                          ),
+                          _buildAnimationShowcase(
+                            title: 'Slide Animation',
+                            child: SlideTextDemo(
+                              type: AnimationType.word,
+                              duration: wordAnimationDuration,
+                              onControllerCreated: (controller) =>
+                                  _setController('slide_word', controller),
+                              slideType: SlideAnimationType.leftRight,
+                            ),
+                          ),
+                          _buildAnimationShowcase(
+                            title: 'Rotate Animation',
+                            child: RotateTextDemo(
+                              type: AnimationType.word,
+                              duration: wordAnimationDuration,
+                              onControllerCreated: (controller) =>
+                                  _setController('rotate_word', controller),
+                              direction: RotateAnimationType.clockwise,
+                            ),
+                          ),
+                          _buildAnimationShowcase(
+                            title: 'Chime Bell Animation',
+                            child: ChimeBellDemo(
+                              type: AnimationType.word,
+                              duration: wordAnimationDuration,
+                              onControllerCreated: (controller) =>
+                                  _setController('chime_word', controller),
+                            ),
+                          ),
+                          _buildAnimationShowcase(
+                            title: 'Spring Animation',
+                            child: SpringDemo(
+                              type: AnimationType.word,
+                              duration: wordAnimationDuration,
+                              onControllerCreated: (controller) =>
+                                  _setController('spring_word', controller),
+                            ),
+                          ),
+                          _buildAnimationShowcase(
+                            title: 'Blur Animation',
+                            child: BlurTextDemo(
+                              type: AnimationType.word,
+                              duration: wordAnimationDuration,
+                              onControllerCreated: (controller) =>
+                                  _setController('blur_word', controller),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                _pageIndicator(wordPageController),
-              ],
-            ],
+                    ),
+                    _buildPageControls(wordPageController, colorScheme),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _pageIndicator(PageController controller) {
-    return Expanded(
-      child: Column(
-        children: [
-          Expanded(
-            child: SmoothPageIndicator(
-              controller: controller,
-              count: length,
-              effect: ScrollingDotsEffect(
-                activeDotColor: Colors.indigo,
-                dotColor: Colors.indigo.withValues(alpha: 0.42),
-                dotHeight: 8,
-                dotWidth: 8,
-              ),
-              onDotClicked: (index) {
-                controller.animateToPage(
-                  index,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
-              },
+  Widget _buildControlButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+    required ColorScheme colorScheme,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FloatingActionButton(
+          onPressed: onPressed,
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+          child: Icon(icon),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSegmentedControl(ColorScheme colorScheme) {
+    return CupertinoSlidingSegmentedControl<int>(
+      backgroundColor: colorScheme.primaryContainer,
+      children: {
+        0: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 24),
+          child: Text(
+            'Letters',
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 8),
+        ),
+        1: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 24),
+          child: Text(
+            'Words',
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      },
+      groupValue: selectedValue,
+      onValueChanged: (int? value) {
+        setState(() {
+          selectedValue = value!;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (selectedValue == 0) {
+            letterPageController.jumpToPage(0);
+            for (final controller in _controllers.values) {
+              controller.restart();
+            }
+          } else {
+            wordPageController.jumpToPage(0);
+            for (final controller in _controllers.values) {
+              controller.restart();
+            }
+          }
+        });
+      },
+    );
+  }
+
+  Widget _buildAnimationShowcase({
+    required String title,
+    required Widget child,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 16,horizontal: 24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              borderRadius:
+                  const BorderRadius.all(Radius.circular(16)),
+            ),
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+          Expanded(child: child),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPageControls(
+      PageController controller, ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        children: [
+          SmoothPageIndicator(
+            controller: controller,
+            count: length,
+            effect: ExpandingDotsEffect(
+              activeDotColor: colorScheme.primary,
+              dotColor: colorScheme.primary.withOpacity(0.2),
+              dotHeight: 8,
+              dotWidth: 8,
+              spacing: 8,
+              expansionFactor: 4,
+            ),
+            onDotClicked: (index) {
+              controller.animateToPage(
+                index,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+          ),
+          const SizedBox(height: 16),
           Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              FloatingActionButton(
-                key: const ValueKey('previous'),
+              _buildNavigationButton(
+                icon: Icons.arrow_back_ios_new,
                 onPressed: _previousPage,
-                child: const Icon(Icons.arrow_back_ios_new),
+                colorScheme: colorScheme,
               ),
               const SizedBox(width: 24),
-              FloatingActionButton(
-                key: const ValueKey('next'),
+              _buildNavigationButton(
+                icon: Icons.arrow_forward_ios,
                 onPressed: _nextPage,
-                child: const Icon(Icons.arrow_forward_ios),
+                colorScheme: colorScheme,
               ),
             ],
           ),
@@ -253,35 +489,24 @@ class _HomeWidgetState extends State<HomeWidget>
     );
   }
 
-  _tabs() {
-    return SizedBox(
-      width: double.maxFinite,
-      child: CupertinoSegmentedControl<int>(
-        children: const {
-          0: Padding(
-            padding: EdgeInsets.symmetric(vertical: 12.0),
-            child: Text('Letters'),
+  Widget _buildNavigationButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required ColorScheme colorScheme,
+  }) {
+    return Material(
+      color: colorScheme.primaryContainer,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          child: Icon(
+            icon,
+            color: colorScheme.onPrimaryContainer,
           ),
-          1: Padding(
-            padding: EdgeInsets.symmetric(vertical: 12.0),
-            child: Text('Words'),
-          ),
-        },
-        groupValue: selectedValue,
-        onValueChanged: (int value) {
-          setState(() {
-            selectedValue = value;
-          });
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (selectedValue == 0) {
-              letterPageController.jumpToPage(0);
-              letterController?.restart();
-            } else {
-              wordPageController.jumpToPage(0);
-              wordController?.restart();
-            }
-          });
-        },
+        ),
       ),
     );
   }
@@ -291,11 +516,13 @@ class ChimeBellDemo extends StatelessWidget {
   final AnimationType type;
   final Duration duration;
   final GlobalKey? chimbellTextKey;
+  final void Function(AnimatedTextController)? onControllerCreated;
   const ChimeBellDemo({
     super.key,
     this.chimbellTextKey,
     this.type = AnimationType.letter,
     this.duration = letterAnimationDuration,
+    this.onControllerCreated,
   });
 
   @override
@@ -304,9 +531,31 @@ class ChimeBellDemo extends StatelessWidget {
       child: ChimeBellText(
         key: chimbellTextKey,
         text: _loremText,
-        duration: duration,
-        type: type,
-        textStyle: _style,
+        style: _style,
+        textAlign: TextAlign.start,
+        config: AnimationConfig(
+          type: type,
+          duration: duration,
+          repeat: true,
+          repeatCount: 3,
+          repeatDelay: const Duration(milliseconds: 500),
+          onPlay: (controller) {
+            print('$runtimeType is played!');
+          },
+          onPause: (controller) {
+            print('$runtimeType is paused!');
+          },
+          onRepeat: (controller) {
+            print('$runtimeType is repeated!');
+          },
+          onComplete: (controller) {
+            print('$runtimeType is completed!');
+          },
+          onDismissed: (controller) {
+            print('$runtimeType is dismissed!');
+          },
+        ),
+        onControllerCreated: onControllerCreated,
       ),
     );
   }
@@ -315,12 +564,12 @@ class ChimeBellDemo extends StatelessWidget {
 class SpringDemo extends StatelessWidget {
   final AnimationType type;
   final Duration duration;
-  final void Function(AnimationController)? builder;
+  final void Function(AnimatedTextController)? onControllerCreated;
   const SpringDemo({
     super.key,
-    this.builder,
     this.type = AnimationType.letter,
     this.duration = letterAnimationDuration,
+    this.onControllerCreated,
   });
 
   @override
@@ -328,19 +577,31 @@ class SpringDemo extends StatelessWidget {
     return Center(
       child: SpringText(
         text: _loremText,
-        duration: duration,
-        type: type,
-        textStyle: _style,
-        onRepeat: (_) {
-          print('$runtimeType is repeated');
-        },
-        onPause: (_) {
-          print('$runtimeType is paused!');
-        },
-        onPlay: (_) {
-          print('$runtimeType is played!');
-        },
-        builder: builder,
+        style: _style,
+        textAlign: TextAlign.start,
+        config: AnimationConfig(
+          type: type,
+          duration: duration,
+          repeat: true,
+          repeatCount: 3,
+          repeatDelay: const Duration(milliseconds: 500),
+          onPlay: (controller) {
+            print('$runtimeType is played!');
+          },
+          onPause: (controller) {
+            print('$runtimeType is paused!');
+          },
+          onRepeat: (controller) {
+            print('$runtimeType is repeated!');
+          },
+          onComplete: (controller) {
+            print('$runtimeType is completed!');
+          },
+          onDismissed: (controller) {
+            print('$runtimeType is dismissed!');
+          },
+        ),
+        onControllerCreated: onControllerCreated,
       ),
     );
   }
@@ -362,7 +623,7 @@ class ScaleTextDemo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: AnimatedTextBase(
+      child: ScaleText(
         key: scaleTextKey,
         text: _loremText,
         style: _style,
@@ -372,7 +633,7 @@ class ScaleTextDemo extends StatelessWidget {
           duration: duration,
           repeat: true,
           repeatCount: 3,
-          reverse: true,
+          // reverse: true,
           repeatDelay: const Duration(milliseconds: 500),
           onPlay: (controller) {
             print('$runtimeType is played!');
@@ -390,21 +651,6 @@ class ScaleTextDemo extends StatelessWidget {
             print('$runtimeType is dismissed!');
           },
         ),
-        builder: (context, animations, segments) {
-          return Wrap(
-            alignment: WrapAlignment.start,
-            children: List.generate(segments.length, (index) {
-              return Transform.scale(
-                scale: animations[index].value,
-                alignment: Alignment.center,
-                child: Text(
-                  segments[index],
-                  style: _style,
-                ),
-              );
-            }),
-          );
-        },
         onControllerCreated: onControllerCreated,
       ),
     );
@@ -416,12 +662,14 @@ class RotateTextDemo extends StatelessWidget {
   final GlobalKey? rotateTextKey;
   final RotateAnimationType direction;
   final Duration duration;
+  final void Function(AnimatedTextController)? onControllerCreated;
   const RotateTextDemo({
     super.key,
     this.rotateTextKey,
     this.direction = RotateAnimationType.clockwise,
     this.type = AnimationType.letter,
     this.duration = letterAnimationDuration,
+    this.onControllerCreated,
   });
 
   @override
@@ -430,10 +678,32 @@ class RotateTextDemo extends StatelessWidget {
       child: RotateText(
         key: rotateTextKey,
         text: _loremText,
+        style: _style,
+        textAlign: TextAlign.start,
         direction: direction,
-        duration: duration,
-        type: type,
-        textStyle: _style,
+        config: AnimationConfig(
+          type: type,
+          duration: duration,
+          repeat: true,
+          repeatCount: 3,
+          repeatDelay: const Duration(milliseconds: 500),
+          onPlay: (controller) {
+            print('$runtimeType is played!');
+          },
+          onPause: (controller) {
+            print('$runtimeType is paused!');
+          },
+          onRepeat: (controller) {
+            print('$runtimeType is repeated!');
+          },
+          onComplete: (controller) {
+            print('$runtimeType is completed!');
+          },
+          onDismissed: (controller) {
+            print('$runtimeType is dismissed!');
+          },
+        ),
+        onControllerCreated: onControllerCreated,
       ),
     );
   }
@@ -442,48 +712,96 @@ class RotateTextDemo extends StatelessWidget {
 class BlurTextDemo extends StatelessWidget {
   final AnimationType type;
   final Duration duration;
+  final void Function(AnimatedTextController)? onControllerCreated;
   const BlurTextDemo({
     super.key,
     this.type = AnimationType.letter,
     this.duration = letterAnimationDuration,
+    this.onControllerCreated,
   });
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: BlurText(
-        type: type,
-        duration: duration,
         text: _loremText,
-        textStyle: _style,
+        style: _style,
+        textAlign: TextAlign.start,
+        config: AnimationConfig(
+          type: type,
+          duration: duration,
+          repeat: true,
+          repeatCount: 3,
+          repeatDelay: const Duration(milliseconds: 500),
+          onPlay: (controller) {
+            print('$runtimeType is played!');
+          },
+          onPause: (controller) {
+            print('$runtimeType is paused!');
+          },
+          onRepeat: (controller) {
+            print('$runtimeType is repeated!');
+          },
+          onComplete: (controller) {
+            print('$runtimeType is completed!');
+          },
+          onDismissed: (controller) {
+            print('$runtimeType is dismissed!');
+          },
+        ),
+        onControllerCreated: onControllerCreated,
       ),
     );
   }
 }
 
-class OffsetTextDemo extends StatelessWidget {
-  final GlobalKey? offsetTextKey;
+class SlideTextDemo extends StatelessWidget {
+  final GlobalKey? slideTextKey;
   final AnimationType type;
   final SlideAnimationType slideType;
   final Duration duration;
-  const OffsetTextDemo({
+  final void Function(AnimatedTextController)? onControllerCreated;
+  const SlideTextDemo({
     super.key,
-    this.offsetTextKey,
+    this.slideTextKey,
     this.type = AnimationType.letter,
     this.slideType = SlideAnimationType.topBottom,
     this.duration = letterAnimationDuration,
+    this.onControllerCreated,
   });
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: OffsetText(
-        key: offsetTextKey,
+      child: SlideText(
+        key: slideTextKey,
         text: _loremText,
-        duration: duration,
-        type: type,
+        style: _style,
+        textAlign: TextAlign.start,
         slideType: slideType,
-        textStyle: _style,
+        config: AnimationConfig(
+          type: type,
+          duration: duration,
+          repeat: true,
+          repeatCount: 3,
+          repeatDelay: const Duration(milliseconds: 500),
+          onPlay: (controller) {
+            print('$runtimeType is played!');
+          },
+          onPause: (controller) {
+            print('$runtimeType is paused!');
+          },
+          onRepeat: (controller) {
+            print('$runtimeType is repeated!');
+          },
+          onComplete: (controller) {
+            print('$runtimeType is completed!');
+          },
+          onDismissed: (controller) {
+            print('$runtimeType is dismissed!');
+          },
+        ),
+        onControllerCreated: onControllerCreated,
       ),
     );
   }
