@@ -73,7 +73,7 @@ class OffsetText extends StatelessWidget {
                   ),
                 );
               },
-              child: Text(
+              child: ParagraphText(
                 segments[index],
                 style: style,
               ),

@@ -69,7 +69,7 @@ class SlideText extends StatelessWidget {
                   ),
                 );
               },
-              child: Text(
+              child: ParagraphText(
                 segments[index],
                 style: style,
               ),

@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:pretty_animated_text/src/widgets/paragraph_text.dart';
 import 'package:pretty_animated_text/src/animated_text_base.dart';
 import 'package:pretty_animated_text/src/animated_text_controller.dart';
 import 'package:pretty_animated_text/src/animation_config.dart';
@@ -68,7 +69,7 @@ class BlurText extends StatelessWidget {
                   ),
                 );
               },
-              child: Text(
+              child: ParagraphText(
                 segments[index],
                 style: style,
               ),
