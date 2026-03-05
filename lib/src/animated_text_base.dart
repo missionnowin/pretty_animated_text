@@ -5,6 +5,7 @@ import 'package:pretty_animated_text/src/enums/animation_type.dart';
 import 'package:pretty_animated_text/src/animated_text_controller.dart';
 import 'package:pretty_animated_text/src/utils/interval_step_by_overlap_factor.dart';
 import 'package:pretty_animated_text/src/utils/custom_curved_animation.dart';
+import 'package:pretty_animated_text/src/utils/total_duration.dart';
 
 /// Base widget for text animations that provides efficient animation handling
 class AnimatedTextBase extends StatefulWidget {
@@ -63,11 +64,17 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
         ? widget.text.splittedLetters.map((dto) => dto.text).toList()
         : widget.text.splittedWords.map((dto) => dto.text).toList();
 
-    _controller = AnimationController(
-      vsync: this,
+    final int totalDuration = getTotalDuration(
+      wordCount: _segments.length,
       duration: widget.config.duration,
+      overlapFactor: widget.config.overlapFactor,
     );
 
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: totalDuration),
+      reverseDuration: Duration(milliseconds: totalDuration),
+    );
     // Create text controller
     _textController = widget.controller ?? AnimatedTextController();
     _textController.animationController = _controller;
@@ -96,7 +103,7 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
           index,
           intervalStep,
           widget.config.overlapFactor,
-          curve: widget.config.curve,
+          curve: Curves.easeInOut,
         ),
       );
     });
@@ -256,7 +263,7 @@ class _AnimatedTextBaseState extends State<AnimatedTextBase>
             index,
             intervalStep,
             widget.config.overlapFactor,
-            curve: widget.config.curve,
+            curve: Curves.easeInOut,
           ),
         );
       });

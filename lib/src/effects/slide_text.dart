@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:pretty_animated_text/pretty_animated_text.dart';
 import 'package:pretty_animated_text/src/utils/offset_tween_by_slide_type.dart';
 
-/// A widget that animates text with a sliding effect, making each character or word
-/// slide into place from a specified direction with a fade-in animation.
-///
-/// The animation can be customized with different slide directions and timing effects.
-class OffsetText extends StatelessWidget {
+/// A widget that animates text with a sliding effect
+class SlideText extends StatelessWidget {
   /// The text to animate
   final String text;
 
@@ -19,14 +16,13 @@ class OffsetText extends StatelessWidget {
   /// The animation configuration
   final AnimationConfig config;
 
-  /// The type of slide animation to apply (e.g., top to bottom, left to right)
-  /// This determines the direction from which the text will slide in
+  /// The type of slide animation to apply
   final SlideAnimationType slideType;
 
   /// On controller created
   final void Function(AnimatedTextController)? onControllerCreated;
 
-  const OffsetText({
+  const SlideText({
     super.key,
     required this.text,
     this.style,
@@ -83,4 +79,4 @@ class OffsetText extends StatelessWidget {
       },
     );
   }
-}
+} 

@@ -5,8 +5,8 @@ export 'src/effects/rotate_text.dart';
 export 'src/effects/blur_text.dart';
 export 'src/effects/offset_text.dart';
 export 'src/effects/spring_text.dart';
-export 'src/effects/chime_bell_text.dart'
-    show ChimeBellText, ChimeBellTextState;
+export 'src/effects/chime_bell_text.dart';
+export 'src/effects/slide_text.dart';
 
 /// Animation type enum for [letter, word] & modes [ forward, reverse, repeat ]
 export 'src/enums/animation_type.dart' show AnimationType, AnimationMode;
@@ -19,3 +19,6 @@ export 'src/enums/rotate_animation_type.dart' show RotateAnimationType;
 
 /// Text alignment enum
 export 'src/enums/text_alignment.dart' show TextAlignment;
+
+// Animated text controller
+export 'src/animated_text_controller.dart' show AnimatedTextController;

@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:pretty_animated_text/src/animated_text_base.dart';
+import 'package:pretty_animated_text/src/animated_text_controller.dart';
 import 'package:pretty_animated_text/src/animation_config.dart';
 
 /// A widget that animates text with a scale effect
 class ScaleText extends StatelessWidget {
   /// The text to animate
   final String text;
-  
+
   /// The style to apply to the text
   final TextStyle? style;
-  
+
   /// The text alignment
   final TextAlign textAlign;
-  
+
   /// The animation configuration
   final AnimationConfig config;
-  
-  /// The alignment of the scale transformation
-  final Alignment alignment;
+
+  /// On controller created
+  final void Function(AnimatedTextController)? onControllerCreated;
 
   const ScaleText({
     super.key,
@@ -25,7 +26,7 @@ class ScaleText extends StatelessWidget {
     this.style,
     this.textAlign = TextAlign.start,
     required this.config,
-    this.alignment = Alignment.center,
+    this.onControllerCreated,
   });
 
   @override
@@ -35,17 +36,18 @@ class ScaleText extends StatelessWidget {
       style: style,
       textAlign: textAlign,
       config: config,
+      
       builder: (context, animations, segments) {
         return Wrap(
-          alignment: textAlign == TextAlign.center 
-              ? WrapAlignment.center 
-              : textAlign == TextAlign.end 
-                  ? WrapAlignment.end 
+          alignment: textAlign == TextAlign.center
+              ? WrapAlignment.center
+              : textAlign == TextAlign.end
+                  ? WrapAlignment.end
                   : WrapAlignment.start,
           children: List.generate(segments.length, (index) {
             return Transform.scale(
               scale: animations[index].value,
-              alignment: alignment,
+              alignment: Alignment.center,
               child: Text(
                 segments[index],
                 style: style,
