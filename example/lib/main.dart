@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:pretty_animated_text/pretty_animated_text.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -478,14 +477,14 @@ class Header extends StatelessWidget {
             ),
           ],
         ),
-        Row(
+        const Row(
           children: [
             _SocialButton(
               url: 'https://pub.dev/packages/pretty_animated_text',
               assetPath: 'assets/pub.png',
               tooltip: 'Pub.dev',
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             _SocialButton(
               url: 'https://github.com/YeLwinOo-Steve/pretty_animated_text',
               assetPath: 'assets/github.png',
