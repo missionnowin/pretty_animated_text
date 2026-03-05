@@ -1,31 +1,44 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:pretty_animated_text/pretty_animated_text.dart';
-import 'package:pretty_animated_text/pretty_animated_text.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-const _loremText = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.';
+const _loremText = 'Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit.';
 const _style = TextStyle(
-  fontSize: 40,
-  fontWeight: FontWeight.bold,
+  fontSize: 48,
+  fontWeight: FontWeight.w800,
+  color: Color(0xFF1E293B),
+  height: 1.2,
+  letterSpacing: -0.5,
 );
-const letterAnimationDuration = Duration(milliseconds: 200);
-const wordAnimationDuration = Duration(milliseconds: 1000);
+
+const letterAnimationDuration = Duration(milliseconds: 300);
+const wordAnimationDuration = Duration(milliseconds: 600);
 
 void main() {
-  runApp(
-    MaterialApp(
+  runApp(const PrettyAnimatedTextApp());
+}
+
+class PrettyAnimatedTextApp extends StatelessWidget {
+  const PrettyAnimatedTextApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Pretty Animated Text',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.indigo,
-          brightness: Brightness.light,
+          seedColor: const Color(0xFF6366F1), // Indigo
+          surface: const Color(0xFFF8FAFC), // Slate 50
         ),
+        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
         useMaterial3: true,
       ),
       home: const HomeWidget(),
-    ),
-  );
+    );
+  }
 }
 
 class HomeWidget extends StatefulWidget {
@@ -35,289 +48,122 @@ class HomeWidget extends StatefulWidget {
   State<HomeWidget> createState() => _HomeWidgetState();
 }
 
-class _HomeWidgetState extends State<HomeWidget>
-    with SingleTickerProviderStateMixin {
+class _HomeWidgetState extends State<HomeWidget> {
   final Map<String, AnimatedTextController> _controllers = {};
-  final PageController letterPageController = PageController();
-  final PageController wordPageController = PageController();
-  final pageTransitionDuration = const Duration(milliseconds: 200);
-  final curve = Curves.easeInOut;
-  int selectedValue = 0;
-  final int length = 6;
+  final PageController _pageController = PageController();
+  final Duration _pageTransitionDuration = const Duration(milliseconds: 400);
+  final Curve _curve = Curves.fastOutSlowIn;
+
+  bool _isWordMode = false;
+  int _currentPage = 0;
+
+  late final List<AnimationDemoItem> _demos;
+
+  @override
+  void initState() {
+    super.initState();
+    _demos = [
+      AnimationDemoItem(
+          title: 'Scale',
+          buildLetter: _buildScaleLetter,
+          buildWord: _buildScaleWord),
+      AnimationDemoItem(
+          title: 'Slide',
+          buildLetter: _buildSlideLetter,
+          buildWord: _buildSlideWord),
+      AnimationDemoItem(
+          title: 'Rotate',
+          buildLetter: _buildRotateLetter,
+          buildWord: _buildRotateWord),
+      AnimationDemoItem(
+          title: 'Chime Bell',
+          buildLetter: _buildChimeLetter,
+          buildWord: _buildChimeWord),
+      AnimationDemoItem(
+          title: 'Spring',
+          buildLetter: _buildSpringLetter,
+          buildWord: _buildSpringWord),
+      AnimationDemoItem(
+          title: 'Blur',
+          buildLetter: _buildBlurLetter,
+          buildWord: _buildBlurWord),
+    ];
+  }
 
   @override
   void dispose() {
-    letterPageController.dispose();
-    wordPageController.dispose();
+    _pageController.dispose();
     for (final controller in _controllers.values) {
       controller.dispose();
     }
     super.dispose();
   }
 
-  Future<void> _launchUrl(String url) async {
-    if (!await launchUrl(Uri.parse(url))) {
-      throw Exception('Could not launch $url');
-    }
-  }
-
-  void _previousPage() {
-    if (selectedValue == 0) {
-      letterPageController.previousPage(
-        duration: pageTransitionDuration,
-        curve: curve,
-      );
-    } else {
-      wordPageController.previousPage(
-        duration: pageTransitionDuration,
-        curve: curve,
-      );
-    }
-  }
-
-  void _nextPage() {
-    if (selectedValue == 0) {
-      letterPageController.nextPage(
-        duration: pageTransitionDuration,
-        curve: curve,
-      );
-    } else {
-      wordPageController.nextPage(
-        duration: pageTransitionDuration,
-        curve: curve,
-      );
-    }
-  }
-
-  int get currentLetterPage => letterPageController.page?.round() ?? 0;
-  int get currentWordPage => wordPageController.page?.round() ?? 0;
-
   void _setController(String key, AnimatedTextController controller) {
     _controllers[key] = controller;
   }
 
-  void _handlePlay() {
-    for (final controller in _controllers.values) {
-      controller.play();
-    }
+  AnimatedTextController? get _currentController {
+    final modePrefix = _isWordMode ? 'word' : 'letter';
+    final demoTitle =
+        _demos[_currentPage].title.toLowerCase().replaceAll(' ', '_');
+    return _controllers['${modePrefix}_$demoTitle'];
   }
 
-  void _handlePause() {
-    for (final controller in _controllers.values) {
-      controller.pause();
-    }
-  }
+  void _handlePlay() => _currentController?.play();
+  void _handlePause() => _currentController?.pause();
+  void _handleRepeat() => _currentController?.repeat();
 
-  void _handleRepeat() {
-    for (final controller in _controllers.values) {
-      controller.repeat();
-    }
+  void _onModeChanged(bool isWord) {
+    if (_isWordMode == isWord) return;
+    setState(() {
+      _isWordMode = isWord;
+    });
+    // Give time for widget to build and controller to be registered
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleRepeat();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDesktop = MediaQuery.of(context).size.width > 800;
 
     return SelectionArea(
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'Pretty Animated Text',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          centerTitle: true,
-          actions: [
-            IconButton(
-              key: const ValueKey('pub.dev'),
-              onPressed: () => _launchUrl(
-                'https://pub.dev/packages/pretty_animated_text',
-              ),
-              icon: ClipRRect(
-                borderRadius: BorderRadius.circular(50),
-                child: Image.asset('assets/pub.png'),
-              ),
-            ),
-            IconButton(
-              key: const ValueKey('github'),
-              onPressed: () => _launchUrl(
-                'https://github.com/YeLwinOo-Steve/pretty_animated_text',
-              ),
-              icon: ClipRRect(
-                borderRadius: BorderRadius.circular(50),
-                child: Image.asset('assets/github.png'),
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-        floatingActionButton: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              _buildControlButton(
-                icon: Icons.refresh,
-                label: 'Repeat',
-                onPressed: _handleRepeat,
-                colorScheme: colorScheme,
-              ),
-              const SizedBox(width: 8),
-              _buildControlButton(
-                icon: Icons.pause,
-                label: 'Pause',
-                onPressed: _handlePause,
-                colorScheme: colorScheme,
-              ),
-              const SizedBox(width: 8),
-              _buildControlButton(
-                icon: Icons.play_arrow,
-                label: 'Play',
-                onPressed: _handlePlay,
-                colorScheme: colorScheme,
-              ),
-            ],
-          ),
-        ),
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                colorScheme.surface,
-                colorScheme.surface.withValues(alpha: 0.8),
-              ],
-            ),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  _buildSegmentedControl(colorScheme),
-                  const SizedBox(height: 24),
-                  if (selectedValue == 0) ...[
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isDesktop ? 48.0 : 24.0,
+                  vertical: 24.0,
+                ),
+                child: Column(
+                  children: [
+                    Header(colorScheme: colorScheme),
+                    const SizedBox(height: 32),
                     Expanded(
-                      flex: 9,
-                      child: PageView(
-                        controller: letterPageController,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _buildAnimationShowcase(
-                            title: 'Scale Animation',
-                            child: ScaleTextDemo(
-                              onControllerCreated: (controller) =>
-                                  _setController('scale_letter', controller),
-                            ),
-                          ),
-                          _buildAnimationShowcase(
-                            title: 'Slide Animation',
-                            child: SlideTextDemo(
-                              onControllerCreated: (controller) =>
-                                  _setController('slide_letter', controller),
-                              slideType: SlideAnimationType.leftRight,
-                            ),
-                          ),
-                          _buildAnimationShowcase(
-                            title: 'Rotate Animation',
-                            child: RotateTextDemo(
-                              onControllerCreated: (controller) =>
-                                  _setController('rotate_letter', controller),
-                              direction: RotateAnimationType.clockwise,
-                            ),
-                          ),
-                          _buildAnimationShowcase(
-                            title: 'Chime Bell Animation',
-                            child: ChimeBellDemo(
-                              onControllerCreated: (controller) =>
-                                  _setController('chime_letter', controller),
-                            ),
-                          ),
-                          _buildAnimationShowcase(
-                            title: 'Spring Animation',
-                            child: SpringDemo(
-                              onControllerCreated: (controller) =>
-                                  _setController('spring_letter', controller),
-                            ),
-                          ),
-                          _buildAnimationShowcase(
-                            title: 'Blur Animation',
-                            child: BlurTextDemo(
-                              onControllerCreated: (controller) =>
-                                  _setController('blur_letter', controller),
-                            ),
+                          if (isDesktop) ...[
+                            Expanded(
+                                flex: 1,
+                                child: _buildSideNavigation(colorScheme)),
+                            const SizedBox(width: 32),
+                          ],
+                          Expanded(
+                            flex: 3,
+                            child: _buildMainContent(colorScheme, isDesktop),
                           ),
                         ],
                       ),
                     ),
-                    _buildPageControls(letterPageController, colorScheme),
-                  ] else ...[
-                    Expanded(
-                      flex: 9,
-                      child: PageView(
-                        controller: wordPageController,
-                        children: [
-                          _buildAnimationShowcase(
-                            title: 'Scale Animation',
-                            child: ScaleTextDemo(
-                              type: AnimationType.word,
-                              duration: wordAnimationDuration,
-                              onControllerCreated: (controller) =>
-                                  _setController('scale_word', controller),
-                            ),
-                          ),
-                          _buildAnimationShowcase(
-                            title: 'Slide Animation',
-                            child: SlideTextDemo(
-                              type: AnimationType.word,
-                              duration: wordAnimationDuration,
-                              onControllerCreated: (controller) =>
-                                  _setController('slide_word', controller),
-                              slideType: SlideAnimationType.leftRight,
-                            ),
-                          ),
-                          _buildAnimationShowcase(
-                            title: 'Rotate Animation',
-                            child: RotateTextDemo(
-                              type: AnimationType.word,
-                              duration: wordAnimationDuration,
-                              onControllerCreated: (controller) =>
-                                  _setController('rotate_word', controller),
-                              direction: RotateAnimationType.clockwise,
-                            ),
-                          ),
-                          _buildAnimationShowcase(
-                            title: 'Chime Bell Animation',
-                            child: ChimeBellDemo(
-                              type: AnimationType.word,
-                              duration: wordAnimationDuration,
-                              onControllerCreated: (controller) =>
-                                  _setController('chime_word', controller),
-                            ),
-                          ),
-                          _buildAnimationShowcase(
-                            title: 'Spring Animation',
-                            child: SpringDemo(
-                              type: AnimationType.word,
-                              duration: wordAnimationDuration,
-                              onControllerCreated: (controller) =>
-                                  _setController('spring_word', controller),
-                            ),
-                          ),
-                          _buildAnimationShowcase(
-                            title: 'Blur Animation',
-                            child: BlurTextDemo(
-                              type: AnimationType.word,
-                              duration: wordAnimationDuration,
-                              onControllerCreated: (controller) =>
-                                  _setController('blur_word', controller),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    _buildPageControls(wordPageController, colorScheme),
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -326,185 +172,444 @@ class _HomeWidgetState extends State<HomeWidget>
     );
   }
 
-  Widget _buildControlButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-    required ColorScheme colorScheme,
-  }) {
+  Widget _buildSideNavigation(ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Animations',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: ListView.separated(
+              itemCount: _demos.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final isSelected = _currentPage == index;
+                return InkWell(
+                  onTap: () {
+                    _pageController.animateToPage(
+                      index,
+                      duration: _pageTransitionDuration,
+                      curve: _curve,
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 16, horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? colorScheme.primaryContainer
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected
+                            ? colorScheme.primary.withValues(alpha: 0.3)
+                            : Colors.transparent,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _demos[index].title,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight:
+                                isSelected ? FontWeight.w700 : FontWeight.w500,
+                            color: isSelected
+                                ? colorScheme.primary
+                                : colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        if (isSelected)
+                          Icon(Icons.arrow_forward_ios,
+                              size: 14, color: colorScheme.primary),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainContent(ColorScheme colorScheme, bool isDesktop) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        FloatingActionButton(
-          onPressed: onPressed,
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
-          child: Icon(icon),
+        Expanded(
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+            ),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _demos[_currentPage].title,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      ModeToggleRound(
+                        isWordMode: _isWordMode,
+                        onChanged: _onModeChanged,
+                        colorScheme: colorScheme,
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: (index) {
+                      setState(() => _currentPage = index);
+                      _handleRepeat();
+                    },
+                    itemCount: _demos.length,
+                    itemBuilder: (context, index) {
+                      final demo = _demos[index];
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(48, 0, 48, 48),
+                        child: Center(
+                          child: _isWordMode
+                              ? demo.buildWord()
+                              : demo.buildLetter(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: colorScheme.onSurface,
-            fontSize: 12,
+        const SizedBox(height: 24),
+        _buildBottomControls(colorScheme, isDesktop),
+      ],
+    );
+  }
+
+  Widget _buildBottomControls(ColorScheme colorScheme, bool isDesktop) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        if (!isDesktop) ...[
+          SmoothPageIndicator(
+            controller: _pageController,
+            count: _demos.length,
+            effect: ExpandingDotsEffect(
+              activeDotColor: colorScheme.primary,
+              dotColor: colorScheme.outlineVariant,
+              dotHeight: 8,
+              dotWidth: 8,
+              expansionFactor: 3,
+            ),
+            onDotClicked: (index) {
+              _pageController.animateToPage(
+                index,
+                duration: _pageTransitionDuration,
+                curve: _curve,
+              );
+            },
+          ),
+        ] else
+          const SizedBox.shrink(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ControlButton(
+                icon: Icons.refresh_rounded,
+                tooltip: 'Repeat',
+                onPressed: _handleRepeat,
+                colorScheme: colorScheme,
+              ),
+              const SizedBox(width: 8),
+              ControlButton(
+                icon: Icons.pause_rounded,
+                tooltip: 'Pause',
+                onPressed: _handlePause,
+                colorScheme: colorScheme,
+              ),
+              const SizedBox(width: 8),
+              ControlButton(
+                icon: Icons.play_arrow_rounded,
+                tooltip: 'Play',
+                onPressed: _handlePlay,
+                colorScheme: colorScheme,
+                isPrimary: true,
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSegmentedControl(ColorScheme colorScheme) {
-    return CupertinoSlidingSegmentedControl<int>(
-      backgroundColor: colorScheme.primaryContainer,
-      children: {
-        0: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 24),
-          child: Text(
-            'Letters',
-            style: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
+  // Demo Builders
+  Widget _buildScaleLetter() => ScaleTextDemo(
+      onControllerCreated: (c) => _setController('letter_scale', c));
+  Widget _buildScaleWord() => ScaleTextDemo(
+      type: AnimationType.word,
+      duration: wordAnimationDuration,
+      onControllerCreated: (c) => _setController('word_scale', c));
+
+  Widget _buildSlideLetter() => SlideTextDemo(
+      slideType: SlideAnimationType.leftRight,
+      onControllerCreated: (c) => _setController('letter_slide', c));
+  Widget _buildSlideWord() => SlideTextDemo(
+      type: AnimationType.word,
+      duration: wordAnimationDuration,
+      slideType: SlideAnimationType.leftRight,
+      onControllerCreated: (c) => _setController('word_slide', c));
+
+  Widget _buildRotateLetter() => RotateTextDemo(
+      direction: RotateAnimationType.clockwise,
+      onControllerCreated: (c) => _setController('letter_rotate', c));
+  Widget _buildRotateWord() => RotateTextDemo(
+      type: AnimationType.word,
+      duration: wordAnimationDuration,
+      direction: RotateAnimationType.clockwise,
+      onControllerCreated: (c) => _setController('word_rotate', c));
+
+  Widget _buildChimeLetter() => ChimeBellDemo(
+      onControllerCreated: (c) => _setController('letter_chime_bell', c));
+  Widget _buildChimeWord() => ChimeBellDemo(
+      type: AnimationType.word,
+      duration: wordAnimationDuration,
+      onControllerCreated: (c) => _setController('word_chime_bell', c));
+
+  Widget _buildSpringLetter() => SpringDemo(
+      onControllerCreated: (c) => _setController('letter_spring', c));
+  Widget _buildSpringWord() => SpringDemo(
+      type: AnimationType.word,
+      duration: wordAnimationDuration,
+      onControllerCreated: (c) => _setController('word_spring', c));
+
+  Widget _buildBlurLetter() => BlurTextDemo(
+      onControllerCreated: (c) => _setController('letter_blur', c));
+  Widget _buildBlurWord() => BlurTextDemo(
+      type: AnimationType.word,
+      duration: wordAnimationDuration,
+      onControllerCreated: (c) => _setController('word_blur', c));
+}
+
+class AnimationDemoItem {
+  final String title;
+  final Widget Function() buildLetter;
+  final Widget Function() buildWord;
+
+  AnimationDemoItem({
+    required this.title,
+    required this.buildLetter,
+    required this.buildWord,
+  });
+}
+
+// ---------------------------------------------------------
+// Reusable UI Widgets
+// ---------------------------------------------------------
+
+class Header extends StatelessWidget {
+  final ColorScheme colorScheme;
+  const Header({super.key, required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colorScheme.primary,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(Icons.text_fields_rounded,
+                  color: Colors.white, size: 28),
             ),
-          ),
-        ),
-        1: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 24),
-          child: Text(
-            'Words',
-            style: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
+            const SizedBox(width: 16),
+            Text(
+              'Pretty Animated Text',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: colorScheme.onSurface,
+                letterSpacing: -0.5,
+              ),
             ),
-          ),
+          ],
         ),
-      },
-      groupValue: selectedValue,
-      onValueChanged: (int? value) {
-        setState(() {
-          selectedValue = value!;
-        });
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (selectedValue == 0) {
-            letterPageController.jumpToPage(0);
-            for (final controller in _controllers.values) {
-              controller.restart();
-            }
-          } else {
-            wordPageController.jumpToPage(0);
-            for (final controller in _controllers.values) {
-              controller.restart();
-            }
-          }
-        });
-      },
+        Row(
+          children: [
+            _SocialButton(
+              url: 'https://pub.dev/packages/pretty_animated_text',
+              assetPath: 'assets/pub.png',
+              tooltip: 'Pub.dev',
+            ),
+            const SizedBox(width: 12),
+            _SocialButton(
+              url: 'https://github.com/YeLwinOo-Steve/pretty_animated_text',
+              assetPath: 'assets/github.png',
+              tooltip: 'GitHub',
+            ),
+          ],
+        )
+      ],
     );
   }
+}
 
-  Widget _buildAnimationShowcase({
-    required String title,
-    required Widget child,
-  }) {
+class _SocialButton extends StatelessWidget {
+  final String url;
+  final String assetPath;
+  final String tooltip;
+
+  const _SocialButton(
+      {required this.url, required this.assetPath, required this.tooltip});
+
+  Future<void> _launch() async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri)) throw Exception('Could not launch $url');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: _launch,
+        borderRadius: BorderRadius.circular(50),
+        child: Container(
+          width: 48,
+          height: 48,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .outlineVariant
+                    .withValues(alpha: 0.5)),
+          ),
+          child: Image.asset(assetPath),
+        ),
+      ),
+    );
+  }
+}
+
+class ModeToggleRound extends StatelessWidget {
+  final bool isWordMode;
+  final ValueChanged<bool> onChanged;
+  final ColorScheme colorScheme;
+
+  const ModeToggleRound({
+    super.key,
+    required this.isWordMode,
+    required this.onChanged,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(100),
       ),
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 16,horizontal: 24),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              borderRadius:
-                  const BorderRadius.all(Radius.circular(16)),
-            ),
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
+          _ToggleItem(
+            text: 'Letters',
+            isSelected: !isWordMode,
+            onTap: () => onChanged(false),
+            colorScheme: colorScheme,
           ),
-          Expanded(child: child),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPageControls(
-      PageController controller, ColorScheme colorScheme) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Column(
-        children: [
-          SmoothPageIndicator(
-            controller: controller,
-            count: length,
-            effect: ExpandingDotsEffect(
-              activeDotColor: colorScheme.primary,
-              dotColor: colorScheme.primary.withOpacity(0.2),
-              dotHeight: 8,
-              dotWidth: 8,
-              spacing: 8,
-              expansionFactor: 4,
-            ),
-            onDotClicked: (index) {
-              controller.animateToPage(
-                index,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildNavigationButton(
-                icon: Icons.arrow_back_ios_new,
-                onPressed: _previousPage,
-                colorScheme: colorScheme,
-              ),
-              const SizedBox(width: 24),
-              _buildNavigationButton(
-                icon: Icons.arrow_forward_ios,
-                onPressed: _nextPage,
-                colorScheme: colorScheme,
-              ),
-            ],
+          _ToggleItem(
+            text: 'Words',
+            isSelected: isWordMode,
+            onTap: () => onChanged(true),
+            colorScheme: colorScheme,
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildNavigationButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-    required ColorScheme colorScheme,
-  }) {
-    return Material(
-      color: colorScheme.primaryContainer,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          child: Icon(
-            icon,
-            color: colorScheme.onPrimaryContainer,
+class _ToggleItem extends StatelessWidget {
+  final String text;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final ColorScheme colorScheme;
+
+  const _ToggleItem({
+    required this.text,
+    required this.isSelected,
+    required this.onTap,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(100),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(100),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+            color:
+                isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
           ),
         ),
       ),
@@ -512,59 +617,88 @@ class _HomeWidgetState extends State<HomeWidget>
   }
 }
 
+class ControlButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+  final ColorScheme colorScheme;
+  final bool isPrimary;
+
+  const ControlButton({
+    super.key,
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    required this.colorScheme,
+    this.isPrimary = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(100),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isPrimary ? colorScheme.primary : Colors.transparent,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: isPrimary ? colorScheme.onPrimary : colorScheme.onSurface,
+            size: 24,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------
+// Animation Demo Component Wrappers
+// ---------------------------------------------------------
+
+AnimationConfig _buildConfig(AnimationType type, Duration duration,
+    void Function(AnimatedTextController)? onCreated) {
+  return AnimationConfig(
+    type: type,
+    duration: duration,
+    repeat: false, // We control repeat via buttons now
+    onPlay: (c) => debugPrint('${type.name} animation played!'),
+    onPause: (c) => debugPrint('${type.name} animation paused!'),
+    onComplete: (c) => debugPrint('${type.name} animation completed!'),
+  );
+}
+
 class ChimeBellDemo extends StatelessWidget {
   final AnimationType type;
   final Duration duration;
-  final GlobalKey? chimbellTextKey;
   final void Function(AnimatedTextController)? onControllerCreated;
+
   const ChimeBellDemo({
     super.key,
-    this.chimbellTextKey,
     this.type = AnimationType.letter,
     this.duration = letterAnimationDuration,
     this.onControllerCreated,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: ChimeBellText(
-        key: chimbellTextKey,
+  Widget build(BuildContext context) => ChimeBellText(
         text: _loremText,
         style: _style,
-        textAlign: TextAlign.start,
-        config: AnimationConfig(
-          type: type,
-          duration: duration,
-          repeat: true,
-          repeatCount: 3,
-          repeatDelay: const Duration(milliseconds: 500),
-          onPlay: (controller) {
-            print('$runtimeType is played!');
-          },
-          onPause: (controller) {
-            print('$runtimeType is paused!');
-          },
-          onRepeat: (controller) {
-            print('$runtimeType is repeated!');
-          },
-          onComplete: (controller) {
-            print('$runtimeType is completed!');
-          },
-          onDismissed: (controller) {
-            print('$runtimeType is dismissed!');
-          },
-        ),
+        config: _buildConfig(type, duration, onControllerCreated),
         onControllerCreated: onControllerCreated,
-      ),
-    );
-  }
+      );
 }
 
 class SpringDemo extends StatelessWidget {
   final AnimationType type;
   final Duration duration;
   final void Function(AnimatedTextController)? onControllerCreated;
+
   const SpringDemo({
     super.key,
     this.type = AnimationType.letter,
@@ -573,99 +707,43 @@ class SpringDemo extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: SpringText(
+  Widget build(BuildContext context) => SpringText(
         text: _loremText,
         style: _style,
-        textAlign: TextAlign.start,
-        config: AnimationConfig(
-          type: type,
-          duration: duration,
-          repeat: true,
-          repeatCount: 3,
-          repeatDelay: const Duration(milliseconds: 500),
-          onPlay: (controller) {
-            print('$runtimeType is played!');
-          },
-          onPause: (controller) {
-            print('$runtimeType is paused!');
-          },
-          onRepeat: (controller) {
-            print('$runtimeType is repeated!');
-          },
-          onComplete: (controller) {
-            print('$runtimeType is completed!');
-          },
-          onDismissed: (controller) {
-            print('$runtimeType is dismissed!');
-          },
-        ),
+        config: _buildConfig(type, duration, onControllerCreated),
         onControllerCreated: onControllerCreated,
-      ),
-    );
-  }
+      );
 }
 
 class ScaleTextDemo extends StatelessWidget {
   final AnimationType type;
   final Duration duration;
-  final GlobalKey? scaleTextKey;
   final void Function(AnimatedTextController)? onControllerCreated;
+
   const ScaleTextDemo({
     super.key,
-    this.scaleTextKey,
     this.type = AnimationType.letter,
     this.duration = letterAnimationDuration,
     this.onControllerCreated,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: ScaleText(
-        key: scaleTextKey,
+  Widget build(BuildContext context) => ScaleText(
         text: _loremText,
         style: _style,
-        textAlign: TextAlign.start,
-        config: AnimationConfig(
-          type: type,
-          duration: duration,
-          repeat: true,
-          repeatCount: 3,
-          // reverse: true,
-          repeatDelay: const Duration(milliseconds: 500),
-          onPlay: (controller) {
-            print('$runtimeType is played!');
-          },
-          onPause: (controller) {
-            print('$runtimeType is paused!');
-          },
-          onRepeat: (controller) {
-            print('$runtimeType is repeated!');
-          },
-          onComplete: (controller) {
-            print('$runtimeType is completed!');
-          },
-          onDismissed: (controller) {
-            print('$runtimeType is dismissed!');
-          },
-        ),
+        config: _buildConfig(type, duration, onControllerCreated),
         onControllerCreated: onControllerCreated,
-      ),
-    );
-  }
+      );
 }
 
 class RotateTextDemo extends StatelessWidget {
   final AnimationType type;
-  final GlobalKey? rotateTextKey;
   final RotateAnimationType direction;
   final Duration duration;
   final void Function(AnimatedTextController)? onControllerCreated;
+
   const RotateTextDemo({
     super.key,
-    this.rotateTextKey,
     this.direction = RotateAnimationType.clockwise,
     this.type = AnimationType.letter,
     this.duration = letterAnimationDuration,
@@ -673,46 +751,20 @@ class RotateTextDemo extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: RotateText(
-        key: rotateTextKey,
+  Widget build(BuildContext context) => RotateText(
         text: _loremText,
         style: _style,
-        textAlign: TextAlign.start,
         direction: direction,
-        config: AnimationConfig(
-          type: type,
-          duration: duration,
-          repeat: true,
-          repeatCount: 3,
-          repeatDelay: const Duration(milliseconds: 500),
-          onPlay: (controller) {
-            print('$runtimeType is played!');
-          },
-          onPause: (controller) {
-            print('$runtimeType is paused!');
-          },
-          onRepeat: (controller) {
-            print('$runtimeType is repeated!');
-          },
-          onComplete: (controller) {
-            print('$runtimeType is completed!');
-          },
-          onDismissed: (controller) {
-            print('$runtimeType is dismissed!');
-          },
-        ),
+        config: _buildConfig(type, duration, onControllerCreated),
         onControllerCreated: onControllerCreated,
-      ),
-    );
-  }
+      );
 }
 
 class BlurTextDemo extends StatelessWidget {
   final AnimationType type;
   final Duration duration;
   final void Function(AnimatedTextController)? onControllerCreated;
+
   const BlurTextDemo({
     super.key,
     this.type = AnimationType.letter,
@@ -721,49 +773,22 @@ class BlurTextDemo extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: BlurText(
+  Widget build(BuildContext context) => BlurText(
         text: _loremText,
         style: _style,
-        textAlign: TextAlign.start,
-        config: AnimationConfig(
-          type: type,
-          duration: duration,
-          repeat: true,
-          repeatCount: 3,
-          repeatDelay: const Duration(milliseconds: 500),
-          onPlay: (controller) {
-            print('$runtimeType is played!');
-          },
-          onPause: (controller) {
-            print('$runtimeType is paused!');
-          },
-          onRepeat: (controller) {
-            print('$runtimeType is repeated!');
-          },
-          onComplete: (controller) {
-            print('$runtimeType is completed!');
-          },
-          onDismissed: (controller) {
-            print('$runtimeType is dismissed!');
-          },
-        ),
+        config: _buildConfig(type, duration, onControllerCreated),
         onControllerCreated: onControllerCreated,
-      ),
-    );
-  }
+      );
 }
 
 class SlideTextDemo extends StatelessWidget {
-  final GlobalKey? slideTextKey;
   final AnimationType type;
   final SlideAnimationType slideType;
   final Duration duration;
   final void Function(AnimatedTextController)? onControllerCreated;
+
   const SlideTextDemo({
     super.key,
-    this.slideTextKey,
     this.type = AnimationType.letter,
     this.slideType = SlideAnimationType.topBottom,
     this.duration = letterAnimationDuration,
@@ -771,38 +796,11 @@ class SlideTextDemo extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: SlideText(
-        key: slideTextKey,
+  Widget build(BuildContext context) => SlideText(
         text: _loremText,
         style: _style,
-        textAlign: TextAlign.start,
         slideType: slideType,
-        config: AnimationConfig(
-          type: type,
-          duration: duration,
-          repeat: true,
-          repeatCount: 3,
-          repeatDelay: const Duration(milliseconds: 500),
-          onPlay: (controller) {
-            print('$runtimeType is played!');
-          },
-          onPause: (controller) {
-            print('$runtimeType is paused!');
-          },
-          onRepeat: (controller) {
-            print('$runtimeType is repeated!');
-          },
-          onComplete: (controller) {
-            print('$runtimeType is completed!');
-          },
-          onDismissed: (controller) {
-            print('$runtimeType is dismissed!');
-          },
-        ),
+        config: _buildConfig(type, duration, onControllerCreated),
         onControllerCreated: onControllerCreated,
-      ),
-    );
-  }
+      );
 }
