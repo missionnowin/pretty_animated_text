@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:pretty_animated_text/animated_text_wrapper.dart';
-import 'package:pretty_animated_text/pretty_animated_text.dart';
 import 'package:pretty_animated_text/src/utils/custom_curved_animation.dart';
 import 'package:pretty_animated_text/src/utils/interval_step_by_overlap_factor.dart';
 import 'package:pretty_animated_text/src/utils/wrap_alignment_by_text_align.dart';
@@ -12,8 +11,6 @@ import 'package:pretty_animated_text/src/utils/wrap_alignment_by_text_align.dart
 class FadeText extends AnimatedTextWrapper {
   /// The type of slide animation to apply (e.g., top to bottom, left to right)
   /// This determines the direction from which the text will slide in
-  final SlideAnimationType slideType;
-
   const FadeText({
     super.key,
     required super.text,
@@ -31,7 +28,6 @@ class FadeText extends AnimatedTextWrapper {
     super.onRepeat,
     super.autoPlay,
     super.builder,
-    this.slideType = SlideAnimationType.topBottom,
   });
 
   @override
