@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pretty_animated_text/pretty_animated_text.dart';
 import 'package:pretty_animated_text/src/constants/constants.dart';
+import 'package:pretty_animated_text/src/utils/spring_curve.dart';
+
 
 /// Configuration for text animations
 class AnimationConfig {
@@ -53,7 +55,7 @@ class AnimationConfig {
   const AnimationConfig({
     this.duration = const Duration(milliseconds: 500),
     this.delay = Duration.zero,
-    this.curve = Curves.easeInOutCubic,
+    this.curve = const SpringCurve(),
     this.reverse = false,
     this.repeat = false,
     this.repeatCount,

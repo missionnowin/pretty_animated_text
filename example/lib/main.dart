@@ -12,8 +12,8 @@ const _style = TextStyle(
   letterSpacing: -0.5,
 );
 
-const letterAnimationDuration = Duration(milliseconds: 300);
-const wordAnimationDuration = Duration(milliseconds: 600);
+const letterAnimationDuration = Duration(milliseconds: 400);
+const wordAnimationDuration = Duration(milliseconds: 1000);
 
 void main() {
   runApp(const PrettyAnimatedTextApp());
@@ -48,7 +48,7 @@ class HomeWidget extends StatefulWidget {
 }
 
 class _HomeWidgetState extends State<HomeWidget> {
-  final Map<String, AnimatedTextController> _controllers = {};
+  AnimatedTextController? _currentController;
   final PageController _pageController = PageController();
   final Duration _pageTransitionDuration = const Duration(milliseconds: 400);
   final Curve _curve = Curves.fastOutSlowIn;
@@ -64,49 +64,64 @@ class _HomeWidgetState extends State<HomeWidget> {
     _demos = [
       AnimationDemoItem(
           title: 'Scale',
-          buildLetter: _buildScaleLetter,
-          buildWord: _buildScaleWord),
+          buildLetter: (onCreated) =>
+              ScaleTextDemo(onControllerCreated: onCreated),
+          buildWord: (onCreated) => ScaleTextDemo(
+              type: AnimationType.word,
+              duration: wordAnimationDuration,
+              onControllerCreated: onCreated)),
       AnimationDemoItem(
           title: 'Slide',
-          buildLetter: _buildSlideLetter,
-          buildWord: _buildSlideWord),
+          buildLetter: (onCreated) => SlideTextDemo(
+              slideType: SlideAnimationType.leftRight,
+              onControllerCreated: onCreated),
+          buildWord: (onCreated) => SlideTextDemo(
+              type: AnimationType.word,
+              duration: wordAnimationDuration,
+              slideType: SlideAnimationType.leftRight,
+              onControllerCreated: onCreated)),
       AnimationDemoItem(
           title: 'Rotate',
-          buildLetter: _buildRotateLetter,
-          buildWord: _buildRotateWord),
+          buildLetter: (onCreated) => RotateTextDemo(
+              direction: RotateAnimationType.clockwise,
+              onControllerCreated: onCreated),
+          buildWord: (onCreated) => RotateTextDemo(
+              type: AnimationType.word,
+              duration: wordAnimationDuration,
+              direction: RotateAnimationType.clockwise,
+              onControllerCreated: onCreated)),
       AnimationDemoItem(
           title: 'Chime Bell',
-          buildLetter: _buildChimeLetter,
-          buildWord: _buildChimeWord),
+          buildLetter: (onCreated) =>
+              ChimeBellDemo(onControllerCreated: onCreated),
+          buildWord: (onCreated) => ChimeBellDemo(
+              type: AnimationType.word,
+              duration: wordAnimationDuration,
+              onControllerCreated: onCreated)),
       AnimationDemoItem(
           title: 'Spring',
-          buildLetter: _buildSpringLetter,
-          buildWord: _buildSpringWord),
+          buildLetter: (onCreated) =>
+              SpringDemo(onControllerCreated: onCreated),
+          buildWord: (onCreated) => SpringDemo(
+              type: AnimationType.word,
+              duration: wordAnimationDuration,
+              onControllerCreated: onCreated)),
       AnimationDemoItem(
           title: 'Blur',
-          buildLetter: _buildBlurLetter,
-          buildWord: _buildBlurWord),
+          buildLetter: (onCreated) =>
+              BlurTextDemo(onControllerCreated: onCreated),
+          buildWord: (onCreated) => BlurTextDemo(
+              type: AnimationType.word,
+              duration: wordAnimationDuration,
+              onControllerCreated: onCreated)),
     ];
   }
 
   @override
   void dispose() {
     _pageController.dispose();
-    for (final controller in _controllers.values) {
-      controller.dispose();
-    }
+    _currentController?.dispose();
     super.dispose();
-  }
-
-  void _setController(String key, AnimatedTextController controller) {
-    _controllers[key] = controller;
-  }
-
-  AnimatedTextController? get _currentController {
-    final modePrefix = _isWordMode ? 'word' : 'letter';
-    final demoTitle =
-        _demos[_currentPage].title.toLowerCase().replaceAll(' ', '_');
-    return _controllers['${modePrefix}_$demoTitle'];
   }
 
   void _handlePlay() => _currentController?.play();
@@ -291,28 +306,42 @@ class _HomeWidgetState extends State<HomeWidget> {
                     controller: _pageController,
                     onPageChanged: (index) {
                       setState(() => _currentPage = index);
-                      _handleRepeat();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _handleRepeat();
+                      });
                     },
                     itemCount: _demos.length,
                     itemBuilder: (context, index) {
                       final demo = _demos[index];
+                      final isCurrentPage = index == _currentPage;
+
+                      void onControllerCreated(AnimatedTextController c) {
+                        if (isCurrentPage) {
+                          _currentController = c;
+                        }
+                      }
+
                       return Padding(
                         padding: const EdgeInsets.fromLTRB(48, 0, 48, 48),
                         child: Center(
+                          key: ValueKey(
+                              '${demo.title}_${_isWordMode}_$isCurrentPage'),
                           child: _isWordMode
-                              ? demo.buildWord()
-                              : demo.buildLetter(),
+                              ? demo.buildWord(onControllerCreated)
+                              : demo.buildLetter(onControllerCreated),
                         ),
                       );
                     },
                   ),
                 ),
+                Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: _buildBottomControls(colorScheme, isDesktop),
+                ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 24),
-        _buildBottomControls(colorScheme, isDesktop),
       ],
     );
   }
@@ -380,59 +409,12 @@ class _HomeWidgetState extends State<HomeWidget> {
       ],
     );
   }
-
-  // Demo Builders
-  Widget _buildScaleLetter() => ScaleTextDemo(
-      onControllerCreated: (c) => _setController('letter_scale', c));
-  Widget _buildScaleWord() => ScaleTextDemo(
-      type: AnimationType.word,
-      duration: wordAnimationDuration,
-      onControllerCreated: (c) => _setController('word_scale', c));
-
-  Widget _buildSlideLetter() => SlideTextDemo(
-      slideType: SlideAnimationType.leftRight,
-      onControllerCreated: (c) => _setController('letter_slide', c));
-  Widget _buildSlideWord() => SlideTextDemo(
-      type: AnimationType.word,
-      duration: wordAnimationDuration,
-      slideType: SlideAnimationType.leftRight,
-      onControllerCreated: (c) => _setController('word_slide', c));
-
-  Widget _buildRotateLetter() => RotateTextDemo(
-      direction: RotateAnimationType.clockwise,
-      onControllerCreated: (c) => _setController('letter_rotate', c));
-  Widget _buildRotateWord() => RotateTextDemo(
-      type: AnimationType.word,
-      duration: wordAnimationDuration,
-      direction: RotateAnimationType.clockwise,
-      onControllerCreated: (c) => _setController('word_rotate', c));
-
-  Widget _buildChimeLetter() => ChimeBellDemo(
-      onControllerCreated: (c) => _setController('letter_chime_bell', c));
-  Widget _buildChimeWord() => ChimeBellDemo(
-      type: AnimationType.word,
-      duration: wordAnimationDuration,
-      onControllerCreated: (c) => _setController('word_chime_bell', c));
-
-  Widget _buildSpringLetter() => SpringDemo(
-      onControllerCreated: (c) => _setController('letter_spring', c));
-  Widget _buildSpringWord() => SpringDemo(
-      type: AnimationType.word,
-      duration: wordAnimationDuration,
-      onControllerCreated: (c) => _setController('word_spring', c));
-
-  Widget _buildBlurLetter() => BlurTextDemo(
-      onControllerCreated: (c) => _setController('letter_blur', c));
-  Widget _buildBlurWord() => BlurTextDemo(
-      type: AnimationType.word,
-      duration: wordAnimationDuration,
-      onControllerCreated: (c) => _setController('word_blur', c));
 }
 
 class AnimationDemoItem {
   final String title;
-  final Widget Function() buildLetter;
-  final Widget Function() buildWord;
+  final Widget Function(void Function(AnimatedTextController)) buildLetter;
+  final Widget Function(void Function(AnimatedTextController)) buildWord;
 
   AnimationDemoItem({
     required this.title,
@@ -660,8 +642,11 @@ class ControlButton extends StatelessWidget {
 // Animation Demo Component Wrappers
 // ---------------------------------------------------------
 
-AnimationConfig _buildConfig(AnimationType type, Duration duration,
-    void Function(AnimatedTextController)? onCreated) {
+AnimationConfig _buildConfig(
+  AnimationType type,
+  Duration duration,
+  void Function(AnimatedTextController)? onCreated,
+) {
   return AnimationConfig(
     type: type,
     duration: duration,
@@ -669,6 +654,9 @@ AnimationConfig _buildConfig(AnimationType type, Duration duration,
     onPlay: (c) => debugPrint('${type.name} animation played!'),
     onPause: (c) => debugPrint('${type.name} animation paused!'),
     onComplete: (c) => debugPrint('${type.name} animation completed!'),
+    repeatCount: 3,
+    onRepeat: (c) => debugPrint('${type.name} animation repeated!'),
+    onDismissed: (c) => debugPrint('${type.name} animation dismissed!'),
   );
 }
 

@@ -1,8 +1,8 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
-/// A custom text widget that uses [ui.ParagraphBuilder] directly.
-/// This improves performance and provides better glyph-level customization.
+// A custom text widget that uses [ui.ParagraphBuilder] directly.
+// This improves performance and provides better glyph-level customization.
 class ParagraphText extends LeafRenderObjectWidget {
   final String text;
   final TextStyle? style;
