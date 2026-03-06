@@ -1,6 +1,7 @@
 export 'src/effects/chime_bell_text.dart'
     show ChimeBellText, ChimeBellTextState;
 export 'src/effects/spring_text.dart' show SpringText, SpringTextState;
+export 'src/effects/fade_text.dart' show FadeText, FadeTextState;
 export 'src/effects/scale_text.dart' show ScaleText, ScaleTextState;
 export 'src/effects/rotate_text.dart' show RotateText, RotateTextState;
 export 'src/effects/blur_text.dart' show BlurText, BlurTextState;
